@@ -2,8 +2,8 @@ package parser
 
 // Document represents the top-level KDL document
 type Document struct {
-	Nodes    []Node
-	Comments []Comment
+	Nodes []Node
+	// Comments []Comment
 }
 
 // Node represents a KDL node with name, arguments, properties, and children
@@ -38,19 +38,19 @@ type Property struct {
 }
 
 // Comment represents a comment in the document
-type Comment struct {
-	Type    CommentType // "line", "multiline", "slashdash"
-	Content string      // The comment text
-}
+// type Comment struct {
+// 	Type    CommentType // "line", "multiline", "slashdash"
+// 	Content string      // The comment text
+// }
 
 // CommentType represents the type of comment
-type CommentType string
+// type CommentType string
 
-const (
-	CommentTypeLine      CommentType = "line"
-	CommentTypeMultiline CommentType = "multiline"
-	CommentTypeSlashdash CommentType = "slashdash"
-)
+// const (
+// 	CommentTypeLine      CommentType = "line"
+// 	CommentTypeMultiline CommentType = "multiline"
+// 	CommentTypeSlashdash CommentType = "slashdash"
+// )
 
 // Parser represents a KDL v2 parser
 type Parser struct {
@@ -65,6 +65,8 @@ func New() *Parser {
 
 // Parse parses a KDL document from the provided string
 func (p *Parser) Parse(input string) (*Document, error) {
+	doc := &Document{}
+
 	// TODO: Implement parsing logic
-	return nil, nil
+	return doc, nil
 }

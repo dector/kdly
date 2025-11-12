@@ -9,13 +9,19 @@ import "testing"
 func TestEmptyDocument(t *testing.T) {
 	input := ``
 
-	// Expected: Document with no nodes, no comments
-	// TODO: Parse input and assert:
-	//   - doc.Nodes is empty
-	//   - doc.Comments is empty
+	// Expected: Document with no nodes
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	if len(doc.Nodes) != 0 {
+		t.Errorf("expected 0 nodes, got %d", len(doc.Nodes))
+	}
+
+	// if len(doc.Comments) != 0 {
+	// 	t.Errorf("expected 0 comments, got %d", len(doc.Comments))
+	// }
 }
 
 func TestSingleSimpleNode(t *testing.T) {
