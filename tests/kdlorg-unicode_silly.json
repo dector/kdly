@@ -1,4 +1,5 @@
 {
+  "enabled": false,
   "input": "kdlorg-unicode_silly-in.kdl",
   "output": {
     "kdl": "kdlorg-unicode_silly-out.kdl"

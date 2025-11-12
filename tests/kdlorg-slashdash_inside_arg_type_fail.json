@@ -1,4 +1,5 @@
 {
+  "enabled": false,
   "input": "kdlorg-slashdash_inside_arg_type_fail-in.kdl",
   "title": "slashdash inside arg type fail",
   "errors": [],

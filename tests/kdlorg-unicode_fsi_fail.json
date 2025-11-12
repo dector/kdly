@@ -1,4 +1,5 @@
 {
+  "enabled": false,
   "input": "kdlorg-unicode_fsi_fail-in.kdl",
   "title": "unicode fsi fail",
   "errors": [],

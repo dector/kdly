@@ -18,7 +18,7 @@ type TestSpec struct {
 	Output  map[string]string `json:"output"` // format -> filename (e.g., "json": "test001-out.json")
 	Title   string            `json:"title"`
 	Errors  []TestError       `json:"errors"`
-	Source  *string           `json:"source,omitempty"` // Optional source URL for test origin
+	Source  *string           `json:"source,omitempty"`  // Optional source URL for test origin
 	Enabled *bool             `json:"enabled,omitempty"` // Defaults to true if not specified
 }
 
@@ -552,9 +552,13 @@ func runGoldenTest(t *testing.T, specFile string, spec TestSpec) {
 	parser := NewParser(string(inputData))
 	doc, parseErr := parser.Parse()
 
+	// Check if test expects errors or success
+	// Tests with no output and no errors specified expect parse to fail (kdl-org convention)
+	expectsFailure := len(spec.Output) == 0 && len(spec.Errors) == 0
+
 	// Check for expected errors
 	if len(spec.Errors) > 0 {
-		// Test expects errors
+		// Test expects specific errors
 		if parseErr == nil {
 			t.Fatalf("Expected parse errors but got none")
 		}
@@ -600,6 +604,13 @@ func runGoldenTest(t *testing.T, specFile string, spec TestSpec) {
 			}
 		}
 
+		return
+	} else if expectsFailure {
+		// Test expects failure but no specific errors (kdl-org convention)
+		if parseErr == nil {
+			t.Fatalf("Expected parse to fail but it succeeded")
+		}
+		// Parse failed as expected, test passes
 		return
 	}
 

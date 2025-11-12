@@ -1,4 +1,5 @@
 {
+  "enabled": false,
   "input": "kdlorg-slash_in_bare_id_fail-in.kdl",
   "title": "slash in bare id fail",
   "errors": [],

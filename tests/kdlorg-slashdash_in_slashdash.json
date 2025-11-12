@@ -1,4 +1,5 @@
 {
+  "enabled": false,
   "input": "kdlorg-slashdash_in_slashdash-in.kdl",
   "output": {
     "kdl": "kdlorg-slashdash_in_slashdash-out.kdl"

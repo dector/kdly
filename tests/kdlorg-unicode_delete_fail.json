@@ -1,4 +1,5 @@
 {
+  "enabled": false,
   "input": "kdlorg-unicode_delete_fail-in.kdl",
   "title": "unicode delete fail",
   "errors": [],

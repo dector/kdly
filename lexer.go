@@ -268,6 +268,47 @@ func (l *Lexer) readRawString(pos Position) Token {
 	}
 	l.readChar() // consume opening "
 
+	// Check if this is a multiline raw string (#"""...#)
+	if l.ch == '"' && l.peekChar() == '"' {
+		// This is a multiline raw string - must be followed by newline
+		l.readChar() // consume second "
+		l.readChar() // consume third "
+		if l.ch != '\n' && l.ch != '\r' {
+			return NewToken(TokenError, "multiline raw string must start with newline after opening \"\"\"", pos)
+		}
+		// Continue reading multiline content
+		for l.ch != 0 {
+			if l.ch == '"' {
+				// Check if this could be the closing """
+				if l.peekChar() == '"' && l.peekCharAt(2) == '"' {
+					// Check if followed by the right number of hashes
+					matched := true
+					for i := 0; i < hashCount; i++ {
+						if l.peekCharAt(i+3) != '#' {
+							matched = false
+							break
+						}
+					}
+					if matched {
+						l.readChar() // consume first "
+						l.readChar() // consume second "
+						l.readChar() // consume third "
+						for i := 0; i < hashCount; i++ {
+							l.readChar() // consume #
+						}
+						break
+					}
+				}
+			}
+			if l.ch == '\n' {
+				l.line++
+				l.column = 0
+			}
+			l.readChar()
+		}
+		return NewToken(TokenString, l.input[start:l.position-1], pos)
+	}
+
 	// Read until we find closing "###...
 	for l.ch != 0 {
 		if l.ch == '"' {

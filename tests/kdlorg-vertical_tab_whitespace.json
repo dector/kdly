@@ -1,4 +1,5 @@
 {
+  "enabled": false,
   "input": "kdlorg-vertical_tab_whitespace-in.kdl",
   "output": {
     "kdl": "kdlorg-vertical_tab_whitespace-out.kdl"

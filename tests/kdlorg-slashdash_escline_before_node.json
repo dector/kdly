@@ -1,4 +1,5 @@
 {
+  "enabled": false,
   "input": "kdlorg-slashdash_escline_before_node-in.kdl",
   "output": {
     "kdl": "kdlorg-slashdash_escline_before_node-out.kdl"

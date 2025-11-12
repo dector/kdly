@@ -453,6 +453,11 @@ func (p *Parser) skipToNextNode() {
 func (p *Parser) nextToken() {
 	p.current = p.peek
 	p.peek = p.lexer.NextToken()
+
+	// Handle lexer errors
+	if p.current.Type == TokenError {
+		p.addError(fmt.Errorf("%s at %s", p.current.Literal, p.current.Position))
+	}
 }
 
 func (p *Parser) currentTokenIs(t TokenType) bool {

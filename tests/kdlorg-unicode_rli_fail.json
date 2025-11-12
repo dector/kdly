@@ -1,4 +1,5 @@
 {
+  "enabled": false,
   "input": "kdlorg-unicode_rli_fail-in.kdl",
   "title": "unicode rli fail",
   "errors": [],

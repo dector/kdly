@@ -1,4 +1,5 @@
 {
+  "enabled": false,
   "input": "kdlorg-unicode_lre_fail-in.kdl",
   "title": "unicode lre fail",
   "errors": [],

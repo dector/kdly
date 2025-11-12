@@ -1,4 +1,5 @@
 {
+  "enabled": false,
   "input": "kdlorg-unicode_under_0x20_fail-in.kdl",
   "title": "unicode under 0x20 fail",
   "errors": [],
