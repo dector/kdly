@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // Lexer tokenizes a KDL document.
 type Lexer struct {
-	input    string
-	position int  // current position in input
-	line     int  // current line (1-based)
-	column   int  // current column (1-based)
-	ch       rune // current character
+	input     string
+	position  int  // byte position after current character
+	charStart int  // byte position of current character
+	line      int  // current line (1-based)
+	column    int  // current column (1-based)
+	ch        rune // current character
 }
 
 // NewLexer creates a new lexer for the given input.
@@ -28,12 +30,15 @@ func NewLexer(input string) *Lexer {
 
 // readChar reads the next character and advances position.
 func (l *Lexer) readChar() {
+	l.charStart = l.position
 	if l.position >= len(l.input) {
 		l.ch = 0 // EOF
-	} else {
-		l.ch = rune(l.input[l.position])
+		return
 	}
-	l.position++
+
+	r, size := utf8.DecodeRuneInString(l.input[l.position:])
+	l.ch = r
+	l.position += size
 	l.column++
 }
 
@@ -42,16 +47,26 @@ func (l *Lexer) peekChar() rune {
 	if l.position >= len(l.input) {
 		return 0
 	}
-	return rune(l.input[l.position])
+	r, _ := utf8.DecodeRuneInString(l.input[l.position:])
+	return r
 }
 
 // peekCharAt returns the character at offset positions ahead without advancing.
+// offset is the number of runes (characters) ahead, not bytes.
 func (l *Lexer) peekCharAt(offset int) rune {
-	pos := l.position + offset - 1
+	pos := l.position
+	for i := 0; i < offset; i++ {
+		if pos >= len(l.input) {
+			return 0
+		}
+		_, size := utf8.DecodeRuneInString(l.input[pos:])
+		pos += size
+	}
 	if pos >= len(l.input) {
 		return 0
 	}
-	return rune(l.input[pos])
+	r, _ := utf8.DecodeRuneInString(l.input[pos:])
+	return r
 }
 
 // currentPosition returns the current position in the source.
@@ -59,7 +74,7 @@ func (l *Lexer) currentPosition() Position {
 	return Position{
 		Line:   l.line,
 		Column: l.column,
-		Offset: l.position - 1,
+		Offset: l.charStart,
 	}
 }
 
@@ -163,7 +178,7 @@ func (l *Lexer) skipWhitespace() {
 
 // readLineComment reads a line comment (// ...).
 func (l *Lexer) readLineComment(pos Position) Token {
-	start := l.position - 1
+	start := pos.Offset
 	l.readChar() // consume first /
 	l.readChar() // consume second /
 
@@ -171,12 +186,12 @@ func (l *Lexer) readLineComment(pos Position) Token {
 		l.readChar()
 	}
 
-	return NewToken(TokenLineComment, l.input[start:l.position-1], pos)
+	return NewToken(TokenLineComment, l.input[start:l.charStart], pos)
 }
 
 // readBlockComment reads a block comment (/* ... */) with nesting support.
 func (l *Lexer) readBlockComment(pos Position) Token {
-	start := l.position - 1
+	start := pos.Offset
 	l.readChar() // consume /
 	l.readChar() // consume *
 
@@ -199,7 +214,7 @@ func (l *Lexer) readBlockComment(pos Position) Token {
 		}
 	}
 
-	return NewToken(TokenBlockComment, l.input[start:l.position-1], pos)
+	return NewToken(TokenBlockComment, l.input[start:l.position], pos)
 }
 
 // readQuotedString reads a quoted string ("...").
@@ -255,7 +270,7 @@ func (l *Lexer) readQuotedString(pos Position) Token {
 
 // readRawString reads a raw string (#"..."#, ##"..."##, etc.).
 func (l *Lexer) readRawString(pos Position) Token {
-	start := l.position - 1
+	start := pos.Offset
 	l.readChar() // consume #
 
 	// Count hashes
@@ -308,7 +323,7 @@ func (l *Lexer) readRawString(pos Position) Token {
 			}
 			l.readChar()
 		}
-		return NewToken(TokenString, l.input[start:l.position-1], pos)
+		return NewToken(TokenString, l.input[start:l.position], pos)
 	}
 
 	// Read until we find closing "###...
@@ -337,12 +352,12 @@ func (l *Lexer) readRawString(pos Position) Token {
 		l.readChar()
 	}
 
-	return NewToken(TokenString, l.input[start:l.position-1], pos)
+	return NewToken(TokenString, l.input[start:l.position], pos)
 }
 
 // readMultilineString reads a multiline string ("""...""").
 func (l *Lexer) readMultilineString(pos Position) Token {
-	start := l.position - 1
+	start := pos.Offset
 	l.readChar() // consume first "
 	l.readChar() // consume second "
 	l.readChar() // consume third "
@@ -362,19 +377,19 @@ func (l *Lexer) readMultilineString(pos Position) Token {
 		l.readChar()
 	}
 
-	return NewToken(TokenString, l.input[start:l.position-1], pos)
+	return NewToken(TokenString, l.input[start:l.position], pos)
 }
 
 // readHashKeyword reads #true, #false, or #null.
 func (l *Lexer) readHashKeyword(pos Position) Token {
-	start := l.position - 1
+	start := pos.Offset
 	l.readChar() // consume #
 
 	for isIdentifierChar(l.ch) {
 		l.readChar()
 	}
 
-	literal := l.input[start : l.position-1]
+	literal := l.input[start:l.charStart]
 	switch literal {
 	case "#true":
 		return NewToken(TokenTrue, literal, pos)
@@ -389,7 +404,7 @@ func (l *Lexer) readHashKeyword(pos Position) Token {
 
 // readNumber reads a number (decimal, hex, octal, binary).
 func (l *Lexer) readNumber(pos Position) Token {
-	start := l.position - 1
+	start := pos.Offset
 
 	// Handle sign
 	if l.ch == '-' || l.ch == '+' {
@@ -420,7 +435,7 @@ func (l *Lexer) readNumber(pos Position) Token {
 				l.readChar()
 			}
 		}
-		return NewToken(TokenNumber, l.input[start:l.position-1], pos)
+		return NewToken(TokenNumber, l.input[start:l.charStart], pos)
 	}
 
 	// Check for hex, octal, binary
@@ -432,21 +447,21 @@ func (l *Lexer) readNumber(pos Position) Token {
 			for isHexDigit(l.ch) || l.ch == '_' {
 				l.readChar()
 			}
-			return NewToken(TokenNumber, l.input[start:l.position-1], pos)
+			return NewToken(TokenNumber, l.input[start:l.charStart], pos)
 		} else if next == 'o' || next == 'O' {
 			l.readChar() // consume 0
 			l.readChar() // consume o
 			for isOctalDigit(l.ch) || l.ch == '_' {
 				l.readChar()
 			}
-			return NewToken(TokenNumber, l.input[start:l.position-1], pos)
+			return NewToken(TokenNumber, l.input[start:l.charStart], pos)
 		} else if next == 'b' || next == 'B' {
 			l.readChar() // consume 0
 			l.readChar() // consume b
 			for isBinaryDigit(l.ch) || l.ch == '_' {
 				l.readChar()
 			}
-			return NewToken(TokenNumber, l.input[start:l.position-1], pos)
+			return NewToken(TokenNumber, l.input[start:l.charStart], pos)
 		}
 	}
 
@@ -474,18 +489,18 @@ func (l *Lexer) readNumber(pos Position) Token {
 		}
 	}
 
-	return NewToken(TokenNumber, l.input[start:l.position-1], pos)
+	return NewToken(TokenNumber, l.input[start:l.charStart], pos)
 }
 
 // readIdentifier reads an identifier or unquoted string.
 func (l *Lexer) readIdentifier(pos Position) Token {
-	start := l.position - 1
+	start := pos.Offset
 
 	for isIdentifierChar(l.ch) {
 		l.readChar()
 	}
 
-	return NewToken(TokenIdentifier, l.input[start:l.position-1], pos)
+	return NewToken(TokenIdentifier, l.input[start:l.charStart], pos)
 }
 
 // Helper functions for character classification

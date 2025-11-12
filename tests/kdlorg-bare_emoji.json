@@ -1,5 +1,4 @@
 {
-  "enabled": false,
   "input": "kdlorg-bare_emoji-in.kdl",
   "output": {
     "kdl": "kdlorg-bare_emoji-out.kdl"
