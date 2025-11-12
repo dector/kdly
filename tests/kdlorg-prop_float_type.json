@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-prop_float_type-in.kdl",
+  "output": {
+    "kdl": "kdlorg-prop_float_type-out.kdl"
+  },
+  "title": "prop float type",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/prop_float_type.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

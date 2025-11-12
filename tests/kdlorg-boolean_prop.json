@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-boolean_prop-in.kdl",
+  "output": {
+    "kdl": "kdlorg-boolean_prop-out.kdl"
+  },
+  "title": "boolean prop",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/boolean_prop.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

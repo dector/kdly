@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-quoted_numeric-in.kdl",
+  "output": {
+    "kdl": "kdlorg-quoted_numeric-out.kdl"
+  },
+  "title": "quoted numeric",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/quoted_numeric.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

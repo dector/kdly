@@ -1,0 +1,6 @@
+{
+  "input": "kdlorg-just_type_no_arg_fail-in.kdl",
+  "title": "just type no arg fail",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/just_type_no_arg_fail.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

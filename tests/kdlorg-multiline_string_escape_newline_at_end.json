@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-multiline_string_escape_newline_at_end-in.kdl",
+  "output": {
+    "kdl": "kdlorg-multiline_string_escape_newline_at_end-out.kdl"
+  },
+  "title": "multiline string escape newline at end",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/multiline_string_escape_newline_at_end.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

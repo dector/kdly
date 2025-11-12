@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-just_child-in.kdl",
+  "output": {
+    "kdl": "kdlorg-just_child-out.kdl"
+  },
+  "title": "just child",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/just_child.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

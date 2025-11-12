@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-unicode_silly-in.kdl",
+  "output": {
+    "kdl": "kdlorg-unicode_silly-out.kdl"
+  },
+  "title": "unicode silly",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/unicode_silly.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

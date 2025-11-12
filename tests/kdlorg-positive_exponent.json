@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-positive_exponent-in.kdl",
+  "output": {
+    "kdl": "kdlorg-positive_exponent-out.kdl"
+  },
+  "title": "positive exponent",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/positive_exponent.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

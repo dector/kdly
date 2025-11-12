@@ -1,0 +1,6 @@
+{
+  "input": "kdlorg-true_prop_key_fail-in.kdl",
+  "title": "true prop key fail",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/true_prop_key_fail.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

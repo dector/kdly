@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-string_arg-in.kdl",
+  "output": {
+    "kdl": "kdlorg-string_arg-out.kdl"
+  },
+  "title": "string arg",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/string_arg.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-numeric_arg-in.kdl",
+  "output": {
+    "kdl": "kdlorg-numeric_arg-out.kdl"
+  },
+  "title": "numeric arg",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/numeric_arg.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

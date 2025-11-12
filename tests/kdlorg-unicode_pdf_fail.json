@@ -1,0 +1,6 @@
+{
+  "input": "kdlorg-unicode_pdf_fail-in.kdl",
+  "title": "unicode pdf fail",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/unicode_pdf_fail.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

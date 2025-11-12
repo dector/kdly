@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-slashdash_prop-in.kdl",
+  "output": {
+    "kdl": "kdlorg-slashdash_prop-out.kdl"
+  },
+  "title": "slashdash prop",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/slashdash_prop.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

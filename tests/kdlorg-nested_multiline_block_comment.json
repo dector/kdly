@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-nested_multiline_block_comment-in.kdl",
+  "output": {
+    "kdl": "kdlorg-nested_multiline_block_comment-out.kdl"
+  },
+  "title": "nested multiline block comment",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/nested_multiline_block_comment.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-null_arg-in.kdl",
+  "output": {
+    "kdl": "kdlorg-null_arg-out.kdl"
+  },
+  "title": "null arg",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/null_arg.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

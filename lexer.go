@@ -202,7 +202,6 @@ func (l *Lexer) readBlockComment(pos Position) Token {
 
 // readQuotedString reads a quoted string ("...").
 func (l *Lexer) readQuotedString(pos Position) Token {
-	start := l.position - 1
 	l.readChar() // consume opening "
 
 	var result strings.Builder
@@ -217,6 +216,8 @@ func (l *Lexer) readQuotedString(pos Position) Token {
 				result.WriteRune('\t')
 			case 'r':
 				result.WriteRune('\r')
+			case 's':
+				result.WriteRune(' ')
 			case '\\':
 				result.WriteRune('\\')
 			case '"':
@@ -247,7 +248,7 @@ func (l *Lexer) readQuotedString(pos Position) Token {
 		l.readChar() // consume closing "
 	}
 
-	return NewToken(TokenString, l.input[start:l.position-1], pos)
+	return NewToken(TokenString, result.String(), pos)
 }
 
 // readRawString reads a raw string (#"..."#, ##"..."##, etc.).

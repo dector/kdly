@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-trailing_underscore_hex-in.kdl",
+  "output": {
+    "kdl": "kdlorg-trailing_underscore_hex-out.kdl"
+  },
+  "title": "trailing underscore hex",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/trailing_underscore_hex.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

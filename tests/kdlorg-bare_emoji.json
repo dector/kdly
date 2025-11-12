@@ -1,0 +1,10 @@
+{
+  "enabled": false,
+  "input": "kdlorg-bare_emoji-in.kdl",
+  "output": {
+    "kdl": "kdlorg-bare_emoji-out.kdl"
+  },
+  "title": "bare emoji",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/bare_emoji.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

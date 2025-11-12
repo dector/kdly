@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-multiline_comment-in.kdl",
+  "output": {
+    "kdl": "kdlorg-multiline_comment-out.kdl"
+  },
+  "title": "multiline comment",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/multiline_comment.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

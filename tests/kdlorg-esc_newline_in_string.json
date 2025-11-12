@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-esc_newline_in_string-in.kdl",
+  "output": {
+    "kdl": "kdlorg-esc_newline_in_string-out.kdl"
+  },
+  "title": "esc newline in string",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/esc_newline_in_string.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

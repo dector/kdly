@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-semicolon_terminated-in.kdl",
+  "output": {
+    "kdl": "kdlorg-semicolon_terminated-out.kdl"
+  },
+  "title": "semicolon terminated",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/semicolon_terminated.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

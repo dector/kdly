@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-slashdash_node_in_child-in.kdl",
+  "output": {
+    "kdl": "kdlorg-slashdash_node_in_child-out.kdl"
+  },
+  "title": "slashdash node in child",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/slashdash_node_in_child.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

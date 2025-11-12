@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-sci_notation_large-in.kdl",
+  "output": {
+    "kdl": "kdlorg-sci_notation_large-out.kdl"
+  },
+  "title": "sci notation large",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/sci_notation_large.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

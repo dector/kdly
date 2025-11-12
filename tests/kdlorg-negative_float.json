@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-negative_float-in.kdl",
+  "output": {
+    "kdl": "kdlorg-negative_float-out.kdl"
+  },
+  "title": "negative float",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/negative_float.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

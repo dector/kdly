@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-string_escaped_literal_whitespace-in.kdl",
+  "output": {
+    "kdl": "kdlorg-string_escaped_literal_whitespace-out.kdl"
+  },
+  "title": "string escaped literal whitespace",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/string_escaped_literal_whitespace.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

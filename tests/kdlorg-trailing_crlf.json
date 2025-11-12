@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-trailing_crlf-in.kdl",
+  "output": {
+    "kdl": "kdlorg-trailing_crlf-out.kdl"
+  },
+  "title": "trailing crlf",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/trailing_crlf.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

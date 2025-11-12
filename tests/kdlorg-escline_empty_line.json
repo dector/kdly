@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-escline_empty_line-in.kdl",
+  "output": {
+    "kdl": "kdlorg-escline_empty_line-out.kdl"
+  },
+  "title": "escline empty line",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/escline_empty_line.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

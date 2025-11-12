@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-unusual_chars_in_bare_id-in.kdl",
+  "output": {
+    "kdl": "kdlorg-unusual_chars_in_bare_id-out.kdl"
+  },
+  "title": "unusual chars in bare id",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/unusual_chars_in_bare_id.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

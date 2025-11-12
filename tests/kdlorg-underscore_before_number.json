@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-underscore_before_number-in.kdl",
+  "output": {
+    "kdl": "kdlorg-underscore_before_number-out.kdl"
+  },
+  "title": "underscore before number",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/underscore_before_number.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

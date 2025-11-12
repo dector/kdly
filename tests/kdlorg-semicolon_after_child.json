@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-semicolon_after_child-in.kdl",
+  "output": {
+    "kdl": "kdlorg-semicolon_after_child-out.kdl"
+  },
+  "title": "semicolon after child",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/semicolon_after_child.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

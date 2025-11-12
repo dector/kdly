@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-nested_comments-in.kdl",
+  "output": {
+    "kdl": "kdlorg-nested_comments-out.kdl"
+  },
+  "title": "nested comments",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/nested_comments.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

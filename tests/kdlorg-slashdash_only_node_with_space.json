@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-slashdash_only_node_with_space-in.kdl",
+  "output": {
+    "kdl": "kdlorg-slashdash_only_node_with_space-out.kdl"
+  },
+  "title": "slashdash only node with space",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/slashdash_only_node_with_space.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

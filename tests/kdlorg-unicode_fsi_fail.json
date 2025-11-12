@@ -1,0 +1,6 @@
+{
+  "input": "kdlorg-unicode_fsi_fail-in.kdl",
+  "title": "unicode fsi fail",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/unicode_fsi_fail.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

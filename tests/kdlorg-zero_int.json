@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-zero_int-in.kdl",
+  "output": {
+    "kdl": "kdlorg-zero_int-out.kdl"
+  },
+  "title": "zero int",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/zero_int.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

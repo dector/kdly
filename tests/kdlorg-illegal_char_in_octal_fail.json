@@ -1,0 +1,6 @@
+{
+  "input": "kdlorg-illegal_char_in_octal_fail-in.kdl",
+  "title": "illegal char in octal fail",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/illegal_char_in_octal_fail.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

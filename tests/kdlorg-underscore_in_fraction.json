@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-underscore_in_fraction-in.kdl",
+  "output": {
+    "kdl": "kdlorg-underscore_in_fraction-out.kdl"
+  },
+  "title": "underscore in fraction",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/underscore_in_fraction.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

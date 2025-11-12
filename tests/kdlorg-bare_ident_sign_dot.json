@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-bare_ident_sign_dot-in.kdl",
+  "output": {
+    "kdl": "kdlorg-bare_ident_sign_dot-out.kdl"
+  },
+  "title": "bare ident sign dot",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/bare_ident_sign_dot.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

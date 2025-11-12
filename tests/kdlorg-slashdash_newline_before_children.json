@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-slashdash_newline_before_children-in.kdl",
+  "output": {
+    "kdl": "kdlorg-slashdash_newline_before_children-out.kdl"
+  },
+  "title": "slashdash newline before children",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/slashdash_newline_before_children.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

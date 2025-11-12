@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-quoted_prop_name-in.kdl",
+  "output": {
+    "kdl": "kdlorg-quoted_prop_name-out.kdl"
+  },
+  "title": "quoted prop name",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/quoted_prop_name.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

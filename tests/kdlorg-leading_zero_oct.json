@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-leading_zero_oct-in.kdl",
+  "output": {
+    "kdl": "kdlorg-leading_zero_oct-out.kdl"
+  },
+  "title": "leading zero oct",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/leading_zero_oct.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

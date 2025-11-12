@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-comment_after_prop_type-in.kdl",
+  "output": {
+    "kdl": "kdlorg-comment_after_prop_type-out.kdl"
+  },
+  "title": "comment after prop type",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/comment_after_prop_type.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

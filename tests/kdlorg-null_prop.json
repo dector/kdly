@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-null_prop-in.kdl",
+  "output": {
+    "kdl": "kdlorg-null_prop-out.kdl"
+  },
+  "title": "null prop",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/null_prop.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

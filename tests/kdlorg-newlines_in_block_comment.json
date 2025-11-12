@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-newlines_in_block_comment-in.kdl",
+  "output": {
+    "kdl": "kdlorg-newlines_in_block_comment-out.kdl"
+  },
+  "title": "newlines in block comment",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/newlines_in_block_comment.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

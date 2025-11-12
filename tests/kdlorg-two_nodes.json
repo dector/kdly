@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-two_nodes-in.kdl",
+  "output": {
+    "kdl": "kdlorg-two_nodes-out.kdl"
+  },
+  "title": "two nodes",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/two_nodes.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

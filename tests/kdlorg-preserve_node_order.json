@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-preserve_node_order-in.kdl",
+  "output": {
+    "kdl": "kdlorg-preserve_node_order-out.kdl"
+  },
+  "title": "preserve node order",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/preserve_node_order.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

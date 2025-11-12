@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-hex_leading_zero-in.kdl",
+  "output": {
+    "kdl": "kdlorg-hex_leading_zero-out.kdl"
+  },
+  "title": "hex leading zero",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/hex_leading_zero.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

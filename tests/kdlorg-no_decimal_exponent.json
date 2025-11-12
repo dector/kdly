@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-no_decimal_exponent-in.kdl",
+  "output": {
+    "kdl": "kdlorg-no_decimal_exponent-out.kdl"
+  },
+  "title": "no decimal exponent",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/no_decimal_exponent.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

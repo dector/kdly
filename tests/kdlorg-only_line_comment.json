@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-only_line_comment-in.kdl",
+  "output": {
+    "kdl": "kdlorg-only_line_comment-out.kdl"
+  },
+  "title": "only line comment",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/only_line_comment.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

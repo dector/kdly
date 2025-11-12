@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-empty_child_different_lines-in.kdl",
+  "output": {
+    "kdl": "kdlorg-empty_child_different_lines-out.kdl"
+  },
+  "title": "empty child different lines",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/empty_child_different_lines.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

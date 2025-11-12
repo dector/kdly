@@ -1,0 +1,6 @@
+{
+  "input": "kdlorg-slashdash_after_arg_type_fail-in.kdl",
+  "title": "slashdash after arg type fail",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/slashdash_after_arg_type_fail.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

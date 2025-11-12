@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-multiline_string_empty_indented-in.kdl",
+  "output": {
+    "kdl": "kdlorg-multiline_string_empty_indented-out.kdl"
+  },
+  "title": "multiline string empty indented",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/multiline_string_empty_indented.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-floating_point_keywords-in.kdl",
+  "output": {
+    "kdl": "kdlorg-floating_point_keywords-out.kdl"
+  },
+  "title": "floating point keywords",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/floating_point_keywords.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

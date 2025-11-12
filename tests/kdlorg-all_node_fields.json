@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-all_node_fields-in.kdl",
+  "output": {
+    "kdl": "kdlorg-all_node_fields-out.kdl"
+  },
+  "title": "all node fields",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/all_node_fields.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

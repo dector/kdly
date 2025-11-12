@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-slashdash_multi_line_comment_inline-in.kdl",
+  "output": {
+    "kdl": "kdlorg-slashdash_multi_line_comment_inline-out.kdl"
+  },
+  "title": "slashdash multi line comment inline",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/slashdash_multi_line_comment_inline.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

@@ -259,20 +259,28 @@ func (p *Parser) parseStringValue() *Value {
 		content := literal[3 : len(literal)-3]
 		stringValue = dedentMultilineString(content)
 	} else if strings.HasPrefix(literal, "#") {
-		// Raw string - remove #"...# wrapper
+		// Raw string (could be multiline or single-line)
 		hashCount := 0
 		for i := 0; i < len(literal) && literal[i] == '#'; i++ {
 			hashCount++
 		}
-		start := hashCount + 1 // skip hashes and opening "
-		end := len(literal) - hashCount - 1 // skip closing " and hashes
-		stringValue = literal[start:end]
-	} else if strings.HasPrefix(literal, "\"") {
-		// Regular quoted string - already processed escape sequences in lexer
-		// For now, just strip quotes (we should actually process escapes here)
-		stringValue = literal[1 : len(literal)-1]
+
+		// Check if it's a multiline raw string (#"""..."""# or ##"""..."""##, etc.)
+		if len(literal) > hashCount+3 && literal[hashCount:hashCount+3] == "\"\"\"" {
+			// Multiline raw string - remove #"""..."""# wrapper and dedent
+			start := hashCount + 3 // skip hashes and opening """
+			end := len(literal) - hashCount - 3 // skip closing """ and hashes
+			content := literal[start:end]
+			stringValue = dedentMultilineString(content)
+		} else {
+			// Regular raw string - remove #"...# wrapper
+			start := hashCount + 1 // skip hashes and opening "
+			end := len(literal) - hashCount - 1 // skip closing " and hashes
+			stringValue = literal[start:end]
+		}
 	} else {
-		// Unquoted string
+		// Regular quoted string - lexer already processed escape sequences and removed quotes
+		// Just use the literal as-is
 		stringValue = literal
 	}
 

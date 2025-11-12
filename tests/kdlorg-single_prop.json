@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-single_prop-in.kdl",
+  "output": {
+    "kdl": "kdlorg-single_prop-out.kdl"
+  },
+  "title": "single prop",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/single_prop.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

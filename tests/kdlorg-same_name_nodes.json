@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-same_name_nodes-in.kdl",
+  "output": {
+    "kdl": "kdlorg-same_name_nodes-out.kdl"
+  },
+  "title": "same name nodes",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/same_name_nodes.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

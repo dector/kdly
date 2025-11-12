@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-block_comment_before_node_no_space-in.kdl",
+  "output": {
+    "kdl": "kdlorg-block_comment_before_node_no_space-out.kdl"
+  },
+  "title": "block comment before node no space",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/block_comment_before_node_no_space.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

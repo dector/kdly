@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-bom_initial-in.kdl",
+  "output": {
+    "kdl": "kdlorg-bom_initial-out.kdl"
+  },
+  "title": "bom initial",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/bom_initial.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

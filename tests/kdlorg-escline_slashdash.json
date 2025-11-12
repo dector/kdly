@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-escline_slashdash-in.kdl",
+  "output": {
+    "kdl": "kdlorg-escline_slashdash-out.kdl"
+  },
+  "title": "escline slashdash",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/escline_slashdash.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

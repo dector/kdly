@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-commented_child-in.kdl",
+  "output": {
+    "kdl": "kdlorg-commented_child-out.kdl"
+  },
+  "title": "commented child",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/commented_child.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

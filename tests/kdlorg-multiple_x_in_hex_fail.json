@@ -1,0 +1,6 @@
+{
+  "input": "kdlorg-multiple_x_in_hex_fail-in.kdl",
+  "title": "multiple x in hex fail",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/multiple_x_in_hex_fail.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

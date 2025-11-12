@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-comma_in_bare_id-in.kdl",
+  "output": {
+    "kdl": "kdlorg-comma_in_bare_id-out.kdl"
+  },
+  "title": "comma in bare id",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/comma_in_bare_id.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

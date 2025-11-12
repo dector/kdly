@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-slashdash_single_line_comment_entry-in.kdl",
+  "output": {
+    "kdl": "kdlorg-slashdash_single_line_comment_entry-out.kdl"
+  },
+  "title": "slashdash single line comment entry",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/slashdash_single_line_comment_entry.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

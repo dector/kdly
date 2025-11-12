@@ -7,16 +7,19 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 )
 
 // TestSpec represents the structure of a test specification file
 type TestSpec struct {
-	Input  string            `json:"input"`
-	Output map[string]string `json:"output"` // format -> filename (e.g., "json": "test001-out.json")
-	Title  string            `json:"title"`
-	Errors []TestError       `json:"errors"`
+	Input   string            `json:"input"`
+	Output  map[string]string `json:"output"` // format -> filename (e.g., "json": "test001-out.json")
+	Title   string            `json:"title"`
+	Errors  []TestError       `json:"errors"`
+	Source  *string           `json:"source,omitempty"` // Optional source URL for test origin
+	Enabled *bool             `json:"enabled,omitempty"` // Defaults to true if not specified
 }
 
 // TestError represents an expected error
@@ -28,11 +31,11 @@ type TestError struct {
 
 // MinimalNode represents a node in the minimalist JSON format
 type MinimalNode struct {
-	Name           string                 `json:"name"`
-	Args           []MinimalValue         `json:"args,omitempty"`
+	Name           string                  `json:"name"`
+	Args           []MinimalValue          `json:"args,omitempty"`
 	Props          map[string]MinimalValue `json:"props,omitempty"`
-	Children       []MinimalNode          `json:"children,omitempty"`
-	TypeAnnotation *string                `json:"typeAnnotation,omitempty"`
+	Children       []MinimalNode           `json:"children,omitempty"`
+	TypeAnnotation *string                 `json:"typeAnnotation,omitempty"`
 }
 
 // MinimalValue represents a value in the minimalist JSON format
@@ -260,9 +263,235 @@ func toXMLDocument(doc *Document) XMLDocument {
 	return xd
 }
 
+// toKDL converts a Document to canonical KDL format
+func toKDL(doc *Document) string {
+	if len(doc.Nodes) == 0 {
+		return "\n"
+	}
+	var sb strings.Builder
+	for i, node := range doc.Nodes {
+		if i > 0 {
+			sb.WriteString("\n")
+		}
+		formatNode(&sb, node, 0)
+	}
+	// formatNode already adds a newline after each node, so no need to add another
+	return sb.String()
+}
+
+// formatNode formats a single node to KDL
+func formatNode(sb *strings.Builder, node *Node, indent int) {
+	// Write indentation
+	for i := 0; i < indent; i++ {
+		sb.WriteString("    ")
+	}
+
+	// Write type annotation if present
+	if node.TypeAnnotation != nil {
+		sb.WriteString("(")
+		sb.WriteString(*node.TypeAnnotation)
+		sb.WriteString(")")
+	}
+
+	// Write node name
+	sb.WriteString(formatIdentifier(node.Name))
+
+	// Write arguments
+	for _, arg := range node.Arguments {
+		sb.WriteString(" ")
+		formatValue(sb, arg)
+	}
+
+	// Write properties (sorted by key)
+	if len(node.Properties) > 0 {
+		keys := make([]string, 0, len(node.Properties))
+		for k := range node.Properties {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		for _, key := range keys {
+			sb.WriteString(" ")
+			sb.WriteString(formatIdentifier(key))
+			sb.WriteString("=")
+			formatValue(sb, node.Properties[key])
+		}
+	}
+
+	// Write children
+	if len(node.Children) > 0 {
+		sb.WriteString(" {\n")
+		for _, child := range node.Children {
+			formatNode(sb, child, indent+1)
+		}
+		for i := 0; i < indent; i++ {
+			sb.WriteString("    ")
+		}
+		sb.WriteString("}")
+	}
+
+	sb.WriteString("\n")
+}
+
+// formatValue formats a value to KDL
+func formatValue(sb *strings.Builder, val *Value) {
+	// Write type annotation if present
+	if val.TypeAnnotation != nil {
+		sb.WriteString("(")
+		sb.WriteString(*val.TypeAnnotation)
+		sb.WriteString(")")
+	}
+
+	switch val.Type {
+	case ValueTypeString:
+		if val.Value != nil {
+			s := val.Value.(string)
+			// Only quote if necessary
+			if needsQuoting(s) {
+				sb.WriteString(formatString(s))
+			} else {
+				sb.WriteString(s)
+			}
+		} else {
+			sb.WriteString(`""`)
+		}
+	case ValueTypeNumber:
+		if val.Value != nil {
+			sb.WriteString(formatNumber(val.Value))
+		} else {
+			sb.WriteString("0")
+		}
+	case ValueTypeBoolean:
+		if val.Value != nil && val.Value.(bool) {
+			sb.WriteString("#true")
+		} else {
+			sb.WriteString("#false")
+		}
+	case ValueTypeNull:
+		sb.WriteString("#null")
+	}
+}
+
+// formatString formats a string value with proper escaping
+func formatString(s string) string {
+	var sb strings.Builder
+	sb.WriteString(`"`)
+	for _, r := range s {
+		switch r {
+		case '\b':
+			sb.WriteString(`\b`)
+		case '\f':
+			sb.WriteString(`\f`)
+		case '\n':
+			sb.WriteString(`\n`)
+		case '\r':
+			sb.WriteString(`\r`)
+		case '\t':
+			sb.WriteString(`\t`)
+		case '\\':
+			sb.WriteString(`\\`)
+		case '"':
+			sb.WriteString(`\"`)
+		default:
+			sb.WriteRune(r)
+		}
+	}
+	sb.WriteString(`"`)
+	return sb.String()
+}
+
+// formatNumber formats a number value to its simplest decimal representation
+func formatNumber(v interface{}) string {
+	switch n := v.(type) {
+	case int64:
+		return strconv.FormatInt(n, 10)
+	case float64:
+		// Check if it's an integer value
+		if n == float64(int64(n)) {
+			return strconv.FormatFloat(n, 'f', 0, 64)
+		}
+		// Use scientific notation for very large or small numbers
+		if n >= 1e15 || n <= -1e15 || (n != 0 && (n < 1e-4 && n > -1e-4)) {
+			return strconv.FormatFloat(n, 'E', -1, 64)
+		}
+		return strconv.FormatFloat(n, 'f', -1, 64)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+// formatIdentifier formats an identifier, quoting if necessary
+func formatIdentifier(s string) string {
+	if needsQuoting(s) {
+		return formatString(s)
+	}
+	return s
+}
+
+// needsQuoting checks if an identifier needs to be quoted
+func needsQuoting(s string) bool {
+	if len(s) == 0 {
+		return true
+	}
+
+	// Check for keywords
+	switch s {
+	case "true", "false", "null":
+		return true
+	}
+
+	// Check if it looks like a number
+	if len(s) > 0 {
+		first := s[0]
+		if first >= '0' && first <= '9' {
+			return true
+		}
+		if (first == '+' || first == '-') && len(s) > 1 {
+			second := s[1]
+			if second >= '0' && second <= '9' {
+				return true
+			}
+		}
+	}
+
+	// Check for special characters that require quoting
+	for i, r := range s {
+		// First character rules
+		if i == 0 {
+			if !isInitialIdentChar(r) {
+				return true
+			}
+		} else {
+			if !isIdentChar(r) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// isInitialIdentChar checks if a rune can start an identifier
+func isInitialIdentChar(r rune) bool {
+	return (r >= 'a' && r <= 'z') ||
+		(r >= 'A' && r <= 'Z') ||
+		r == '_' ||
+		r == '-' ||
+		r == '.' ||
+		r == '?' ||
+		r == '!' ||
+		r >= 0x80 // Unicode
+}
+
+// isIdentChar checks if a rune can be in an identifier
+func isIdentChar(r rune) bool {
+	return isInitialIdentChar(r) ||
+		(r >= '0' && r <= '9')
+}
+
 func TestGoldenTests(t *testing.T) {
 	// Get all test spec files
-	testFiles, err := filepath.Glob("tests/test*.json")
+	testFiles, err := filepath.Glob("tests/*.json")
 	if err != nil {
 		t.Fatalf("Failed to list test files: %v", err)
 	}
@@ -295,10 +524,17 @@ func TestGoldenTests(t *testing.T) {
 			t.Fatalf("Failed to parse test spec %s: %v", specFile, err)
 		}
 
-		// Run test as a subtest
-		t.Run(spec.Title, func(t *testing.T) {
-			runGoldenTest(t, specFile, spec)
-		})
+		// Run test unless explicitly disabled (enabled defaults to true)
+		if spec.Enabled != nil && !*spec.Enabled {
+			// Create a subtest that skips itself so it shows in test output
+			t.Run(spec.Title, func(t *testing.T) {
+				t.Skip("Test explicitly disabled")
+			})
+		} else {
+			t.Run(spec.Title, func(t *testing.T) {
+				runGoldenTest(t, specFile, spec)
+			})
+		}
 	}
 }
 
@@ -386,6 +622,8 @@ func runGoldenTest(t *testing.T, specFile string, spec TestSpec) {
 				compareJSONOutput(t, doc, outputPath)
 			case "xml":
 				compareXMLOutput(t, doc, outputPath)
+			case "kdl":
+				compareKDLOutput(t, doc, outputPath)
 			default:
 				t.Errorf("Unknown output format: %s", format)
 			}
@@ -472,6 +710,30 @@ func compareXMLOutput(t *testing.T, doc *Document, expectedPath string) {
 
 		// Show diff
 		showDiff(t, string(expectedNormalized), string(actualNormalized))
+	}
+}
+
+func compareKDLOutput(t *testing.T, doc *Document, expectedPath string) {
+	// Convert to canonical KDL format
+	actualKDL := toKDL(doc)
+
+	// Read expected output
+	expectedKDL, err := os.ReadFile(expectedPath)
+	if err != nil {
+		t.Fatalf("Failed to read expected KDL output %s: %v", expectedPath, err)
+	}
+
+	// Normalize line endings for comparison
+	expectedStr := strings.ReplaceAll(string(expectedKDL), "\r\n", "\n")
+	actualStr := strings.ReplaceAll(actualKDL, "\r\n", "\n")
+
+	// Compare
+	if expectedStr != actualStr {
+		t.Errorf("KDL output mismatch:\n\nExpected:\n%s\n\nActual:\n%s",
+			expectedStr, actualStr)
+
+		// Show diff
+		showDiff(t, expectedStr, actualStr)
 	}
 }
 

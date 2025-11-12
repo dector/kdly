@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-false_prefix_in_prop_key-in.kdl",
+  "output": {
+    "kdl": "kdlorg-false_prefix_in_prop_key-out.kdl"
+  },
+  "title": "false prefix in prop key",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/false_prefix_in_prop_key.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}

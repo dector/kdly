@@ -1,0 +1,9 @@
+{
+  "input": "kdlorg-binary_trailing_underscore-in.kdl",
+  "output": {
+    "kdl": "kdlorg-binary_trailing_underscore-out.kdl"
+  },
+  "title": "binary trailing underscore",
+  "errors": [],
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/binary_trailing_underscore.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+}
