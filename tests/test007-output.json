@@ -1,0 +1,10 @@
+{
+  "nodes": [
+    {
+      "name": "node",
+      "args": [
+        {"type": "number", "value": 42}
+      ]
+    }
+  ]
+}

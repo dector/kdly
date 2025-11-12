@@ -1,0 +1,12 @@
+{
+  "nodes": [
+    {
+      "name": "node",
+      "args": [
+        {"type": "string", "value": "arg1"},
+        {"type": "string", "value": "arg2"},
+        {"type": "string", "value": "arg3"}
+      ]
+    }
+  ]
+}

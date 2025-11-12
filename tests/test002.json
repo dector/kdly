@@ -1,0 +1,6 @@
+{
+  "input": "test002-input.kdl",
+  "output": "test002-output.json",
+  "title": "node with arguments",
+  "errors": []
+}

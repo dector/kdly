@@ -1,0 +1,13 @@
+{
+  "nodes": [
+    {
+      "name": "node",
+      "args": [
+        {"type": "string", "value": "arg1"},
+        {"type": "number", "value": 42},
+        {"type": "boolean", "value": true},
+        {"type": "null", "value": null}
+      ]
+    }
+  ]
+}

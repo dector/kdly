@@ -1,0 +1,11 @@
+{
+  "nodes": [
+    {
+      "name": "node",
+      "props": {
+        "key1": {"type": "string", "value": "value1"},
+        "key2": {"type": "number", "value": 42}
+      }
+    }
+  ]
+}

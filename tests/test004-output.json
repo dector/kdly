@@ -1,0 +1,18 @@
+{
+  "nodes": [
+    {
+      "name": "parent",
+      "children": [
+        {
+          "name": "child1"
+        },
+        {
+          "name": "child2",
+          "args": [
+            {"type": "string", "value": "arg"}
+          ]
+        }
+      ]
+    }
+  ]
+}

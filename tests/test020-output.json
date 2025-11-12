@@ -1,0 +1,10 @@
+{
+  "nodes": [
+    {
+      "name": "node",
+      "args": [
+        {"type": "string", "value": "C:\\path\\to\\file"}
+      ]
+    }
+  ]
+}

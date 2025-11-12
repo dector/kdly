@@ -1,0 +1,6 @@
+{
+  "input": "test006-input.kdl",
+  "output": "test006-output.json",
+  "title": "nodes with semicolons",
+  "errors": []
+}

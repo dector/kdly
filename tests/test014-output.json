@@ -1,0 +1,13 @@
+{
+  "nodes": [
+    {
+      "name": "node",
+      "args": [
+        {"type": "string", "value": "value", "typeAnnotation": "type"}
+      ],
+      "props": {
+        "key": {"type": "number", "value": 42, "typeAnnotation": "int"}
+      }
+    }
+  ]
+}
