@@ -1,0 +1,5 @@
+# For Claude
+.git/
+.jj/
+
+out/
