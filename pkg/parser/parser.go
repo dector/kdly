@@ -60,6 +60,7 @@ type parserState int
 const (
 	stDocumentStart parserState = iota
 	stNodeName
+	stNodeNameQuoted
 	stDocumentEnd
 )
 
@@ -154,6 +155,102 @@ func (p *Parser) parseIdentifier() string {
 	return string(p.input[start:p.pos])
 }
 
+// parseQuotedString parses a quoted string from the current position
+// Expects the current position to be at the opening quote (")
+// Returns the unescaped string content (without quotes)
+func (p *Parser) parseQuotedString() string {
+	if p.peek() != '"' {
+		p.panicAt("expected opening quote")
+	}
+	p.advance() // Skip opening quote
+
+	var result []rune
+
+	for !p.isEOF() {
+		ch := p.peek()
+
+		if ch == '"' {
+			// End of string
+			p.advance() // Skip closing quote
+			return string(result)
+		}
+
+		if ch == '\\' {
+			// Escape sequence
+			p.advance() // Skip backslash
+			if p.isEOF() {
+				p.panicAt("unterminated string: EOF after backslash")
+			}
+
+			escapeChar := p.peek()
+			p.advance()
+
+			switch escapeChar {
+			case '"':
+				result = append(result, '"')
+			case '\\':
+				result = append(result, '\\')
+			case '/':
+				result = append(result, '/')
+			case 'n':
+				result = append(result, '\n')
+			case 'r':
+				result = append(result, '\r')
+			case 't':
+				result = append(result, '\t')
+			case 'b':
+				result = append(result, '\b')
+			case 'f':
+				result = append(result, '\f')
+			case 'u':
+				// Unicode escape: \u{XXXX}
+				if p.peek() != '{' {
+					p.panicAt("invalid unicode escape: expected '{'")
+				}
+				p.advance() // Skip '{'
+
+				var hexDigits []rune
+				for !p.isEOF() && p.peek() != '}' {
+					hexDigits = append(hexDigits, p.peek())
+					p.advance()
+				}
+
+				if p.isEOF() {
+					p.panicAt("unterminated unicode escape")
+				}
+
+				p.advance() // Skip '}'
+
+				// Parse hex digits
+				var codepoint int
+				for _, digit := range hexDigits {
+					codepoint *= 16
+					if digit >= '0' && digit <= '9' {
+						codepoint += int(digit - '0')
+					} else if digit >= 'a' && digit <= 'f' {
+						codepoint += int(digit - 'a' + 10)
+					} else if digit >= 'A' && digit <= 'F' {
+						codepoint += int(digit - 'A' + 10)
+					} else {
+						p.panicAt(fmt.Sprintf("invalid hex digit in unicode escape: %c", digit))
+					}
+				}
+
+				result = append(result, rune(codepoint))
+			default:
+				p.panicAt(fmt.Sprintf("invalid escape sequence: \\%c", escapeChar))
+			}
+		} else {
+			// Regular character
+			result = append(result, ch)
+			p.advance()
+		}
+	}
+
+	p.panicAt("unterminated string: unexpected EOF")
+	return "" // unreachable
+}
+
 // Parse parses a KDL document from the provided string
 func (p *Parser) Parse(input string) (*Document, error) {
 	// Initialize parser state
@@ -176,13 +273,39 @@ func (p *Parser) Parse(input string) (*Document, error) {
 				// Empty document or no more nodes
 				p.state = stDocumentEnd
 			} else {
-				// Transition to parsing node name
-				p.state = stNodeName
+				// Transition to parsing node name based on next character
+				if p.peek() == '"' {
+					p.state = stNodeNameQuoted
+				} else {
+					p.state = stNodeName
+				}
 			}
 
 		case stNodeName:
 			// Parse the node name (identifier)
 			nodeName := p.parseIdentifier()
+
+			// Create a node with the parsed name
+			node := Node{
+				Name:       nodeName,
+				Arguments:  make([]Value, 0),
+				Properties: make([]Property, 0),
+				Children:   make([]Node, 0),
+			}
+
+			// Add the node to the document
+			doc.Nodes = append(doc.Nodes, node)
+
+			// Skip any trailing whitespace
+			p.skipWhitespace()
+
+			// For now, we only support single node, so transition to end
+			// Later this will be extended to handle arguments, properties, children, etc.
+			p.state = stDocumentEnd
+
+		case stNodeNameQuoted:
+			// Parse the node name (quoted string)
+			nodeName := p.parseQuotedString()
 
 			// Create a node with the parsed name
 			node := Node{
