@@ -1,0 +1,1 @@
+- This project is an implementation for parser of configuration language [KDLv2](https://kdl.dev/) in Go.
