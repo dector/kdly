@@ -1,6 +1,9 @@
 {
-  "input": "test006-input.kdl",
-  "output": "test006-output.json",
+  "input": "test006-in.kdl",
+  "output": {
+    "json": "test006-out.json",
+    "xml": "test006-out.xml"
+  },
   "title": "nodes with semicolons",
   "errors": []
 }

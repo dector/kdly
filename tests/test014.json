@@ -1,6 +1,9 @@
 {
-  "input": "test014-input.kdl",
-  "output": "test014-output.json",
+  "input": "test014-in.kdl",
+  "output": {
+    "json": "test014-out.json",
+    "xml": "test014-out.xml"
+  },
   "title": "type annotations",
   "errors": []
 }

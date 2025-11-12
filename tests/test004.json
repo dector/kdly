@@ -1,6 +1,9 @@
 {
-  "input": "test004-input.kdl",
-  "output": "test004-output.json",
+  "input": "test004-in.kdl",
+  "output": {
+    "json": "test004-out.json",
+    "xml": "test004-out.xml"
+  },
   "title": "node with children",
   "errors": []
 }

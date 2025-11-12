@@ -1,6 +1,9 @@
 {
-  "input": "test008-input.kdl",
-  "output": "test008-output.json",
+  "input": "test008-in.kdl",
+  "output": {
+    "json": "test008-out.json",
+    "xml": "test008-out.xml"
+  },
   "title": "negative numbers",
   "errors": []
 }

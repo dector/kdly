@@ -1,6 +1,9 @@
 {
-  "input": "test010-input.kdl",
-  "output": "test010-output.json",
+  "input": "test010-in.kdl",
+  "output": {
+    "json": "test010-out.json",
+    "xml": "test010-out.xml"
+  },
   "title": "scientific notation",
   "errors": []
 }

@@ -1,6 +1,9 @@
 {
-  "input": "test017-input.kdl",
-  "output": "test017-output.json",
+  "input": "test017-in.kdl",
+  "output": {
+    "json": "test017-out.json",
+    "xml": "test017-out.xml"
+  },
   "title": "slashdash comments",
   "errors": []
 }

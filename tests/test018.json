@@ -1,6 +1,9 @@
 {
-  "input": "test018-input.kdl",
-  "output": "test018-output.json",
+  "input": "test018-in.kdl",
+  "output": {
+    "json": "test018-out.json",
+    "xml": "test018-out.xml"
+  },
   "title": "line continuation",
   "errors": []
 }

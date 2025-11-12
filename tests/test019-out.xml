@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+  <node name="node">
+    <arg type="string">arg1</arg>
+    <arg type="string">arg2</arg>
+    <prop name="key1" type="string">value1</prop>
+    <prop name="key2" type="number">42</prop>
+  </node>
+</document>

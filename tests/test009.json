@@ -1,6 +1,9 @@
 {
-  "input": "test009-input.kdl",
-  "output": "test009-output.json",
+  "input": "test009-in.kdl",
+  "output": {
+    "json": "test009-out.json",
+    "xml": "test009-out.xml"
+  },
   "title": "float numbers",
   "errors": []
 }

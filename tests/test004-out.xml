@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+  <node name="parent">
+    <node name="child1"></node>
+    <node name="child2">
+      <arg type="string">arg</arg>
+    </node>
+  </node>
+</document>

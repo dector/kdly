@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+  <node name="node">
+    <arg type="string" typeAnnotation="type">value</arg>
+    <prop name="key" type="number" typeAnnotation="int">42</prop>
+  </node>
+</document>

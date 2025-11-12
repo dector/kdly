@@ -1,6 +1,9 @@
 {
-  "input": "test015-input.kdl",
-  "output": "test015-output.json",
+  "input": "test015-in.kdl",
+  "output": {
+    "json": "test015-out.json",
+    "xml": "test015-out.xml"
+  },
   "title": "line comments",
   "errors": []
 }

@@ -1,6 +1,9 @@
 {
-  "input": "test013-input.kdl",
-  "output": "test013-output.json",
+  "input": "test013-in.kdl",
+  "output": {
+    "json": "test013-out.json",
+    "xml": "test013-out.xml"
+  },
   "title": "binary numbers",
   "errors": []
 }

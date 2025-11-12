@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+  <node name="node">
+    <arg type="string">arg1</arg>
+    <arg type="number">42</arg>
+    <arg type="boolean">true</arg>
+    <arg type="null"></arg>
+  </node>
+</document>

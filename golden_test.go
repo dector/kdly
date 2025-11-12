@@ -2,6 +2,7 @@ package kdly
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,10 +13,10 @@ import (
 
 // TestSpec represents the structure of a test specification file
 type TestSpec struct {
-	Input  string      `json:"input"`
-	Output string      `json:"output"`
-	Title  string      `json:"title"`
-	Errors []TestError `json:"errors"`
+	Input  string            `json:"input"`
+	Output map[string]string `json:"output"` // format -> filename (e.g., "json": "test001-out.json")
+	Title  string            `json:"title"`
+	Errors []TestError       `json:"errors"`
 }
 
 // TestError represents an expected error
@@ -112,6 +113,153 @@ func toMinimalDocument(doc *Document) MinimalDocument {
 	return md
 }
 
+// XMLValue represents a value in XML format
+type XMLValue struct {
+	Type           string `xml:"type,attr"`
+	Value          string `xml:",chardata"`
+	TypeAnnotation string `xml:"typeAnnotation,attr,omitempty"`
+}
+
+// XMLProp represents a property in XML format
+type XMLProp struct {
+	Name           string `xml:"name,attr"`
+	Type           string `xml:"type,attr"`
+	Value          string `xml:",chardata"`
+	TypeAnnotation string `xml:"typeAnnotation,attr,omitempty"`
+}
+
+// XMLNode represents a node in XML format
+type XMLNode struct {
+	XMLName        xml.Name   `xml:"node"`
+	Name           string     `xml:"name,attr"`
+	TypeAnnotation string     `xml:"typeAnnotation,attr,omitempty"`
+	Args           []XMLValue `xml:"arg,omitempty"`
+	Props          []XMLProp  `xml:"prop,omitempty"`
+	Children       []XMLNode  `xml:"node,omitempty"`
+}
+
+// XMLDocument represents a document in XML format
+type XMLDocument struct {
+	XMLName xml.Name  `xml:"document"`
+	Nodes   []XMLNode `xml:"node"`
+}
+
+// toXMLValue converts a Value to XMLValue
+func toXMLValue(v *Value) XMLValue {
+	typeStr := ""
+	valueStr := ""
+
+	switch v.Type {
+	case ValueTypeString:
+		typeStr = "string"
+		if v.Value != nil {
+			valueStr = v.Value.(string)
+		}
+	case ValueTypeNumber:
+		typeStr = "number"
+		if v.Value != nil {
+			valueStr = fmt.Sprintf("%v", v.Value)
+		}
+	case ValueTypeBoolean:
+		typeStr = "boolean"
+		if v.Value != nil {
+			valueStr = fmt.Sprintf("%v", v.Value)
+		}
+	case ValueTypeNull:
+		typeStr = "null"
+		valueStr = ""
+	}
+
+	xv := XMLValue{
+		Type:  typeStr,
+		Value: valueStr,
+	}
+
+	if v.TypeAnnotation != nil {
+		xv.TypeAnnotation = *v.TypeAnnotation
+	}
+
+	return xv
+}
+
+// toXMLNode converts a Node to XMLNode
+func toXMLNode(n *Node) XMLNode {
+	xn := XMLNode{
+		Name: n.Name,
+	}
+
+	if n.TypeAnnotation != nil {
+		xn.TypeAnnotation = *n.TypeAnnotation
+	}
+
+	// Convert arguments
+	if len(n.Arguments) > 0 {
+		xn.Args = make([]XMLValue, len(n.Arguments))
+		for i, arg := range n.Arguments {
+			xn.Args[i] = toXMLValue(arg)
+		}
+	}
+
+	// Convert properties
+	if len(n.Properties) > 0 {
+		xn.Props = make([]XMLProp, 0, len(n.Properties))
+		for key, val := range n.Properties {
+			prop := XMLProp{
+				Name: key,
+				Type: "",
+			}
+
+			switch val.Type {
+			case ValueTypeString:
+				prop.Type = "string"
+				if val.Value != nil {
+					prop.Value = val.Value.(string)
+				}
+			case ValueTypeNumber:
+				prop.Type = "number"
+				if val.Value != nil {
+					prop.Value = fmt.Sprintf("%v", val.Value)
+				}
+			case ValueTypeBoolean:
+				prop.Type = "boolean"
+				if val.Value != nil {
+					prop.Value = fmt.Sprintf("%v", val.Value)
+				}
+			case ValueTypeNull:
+				prop.Type = "null"
+				prop.Value = ""
+			}
+
+			if val.TypeAnnotation != nil {
+				prop.TypeAnnotation = *val.TypeAnnotation
+			}
+
+			xn.Props = append(xn.Props, prop)
+		}
+	}
+
+	// Convert children
+	if len(n.Children) > 0 {
+		xn.Children = make([]XMLNode, len(n.Children))
+		for i, child := range n.Children {
+			xn.Children[i] = toXMLNode(child)
+		}
+	}
+
+	return xn
+}
+
+// toXMLDocument converts a Document to XMLDocument
+func toXMLDocument(doc *Document) XMLDocument {
+	xd := XMLDocument{
+		Nodes: make([]XMLNode, len(doc.Nodes)),
+	}
+	for i, node := range doc.Nodes {
+		xd.Nodes[i] = toXMLNode(node)
+	}
+	return xd
+}
+
 func TestGoldenTests(t *testing.T) {
 	// Get all test spec files
 	testFiles, err := filepath.Glob("tests/test*.json")
@@ -123,7 +271,7 @@ func TestGoldenTests(t *testing.T) {
 	var specFiles []string
 	for _, file := range testFiles {
 		base := filepath.Base(file)
-		if !strings.Contains(base, "-input") && !strings.Contains(base, "-output") {
+		if !strings.Contains(base, "-in") && !strings.Contains(base, "-out") {
 			specFiles = append(specFiles, file)
 		}
 	}
@@ -228,6 +376,24 @@ func runGoldenTest(t *testing.T, specFile string, spec TestSpec) {
 		t.Fatal("Document is nil")
 	}
 
+	// Test each output format
+	for format, outputFile := range spec.Output {
+		t.Run(format, func(t *testing.T) {
+			outputPath := filepath.Join(testDir, outputFile)
+
+			switch format {
+			case "json":
+				compareJSONOutput(t, doc, outputPath)
+			case "xml":
+				compareXMLOutput(t, doc, outputPath)
+			default:
+				t.Errorf("Unknown output format: %s", format)
+			}
+		})
+	}
+}
+
+func compareJSONOutput(t *testing.T, doc *Document, expectedPath string) {
 	// Convert to minimal format
 	minimalDoc := toMinimalDocument(doc)
 
@@ -238,10 +404,9 @@ func runGoldenTest(t *testing.T, specFile string, spec TestSpec) {
 	}
 
 	// Read expected output
-	outputPath := filepath.Join(testDir, spec.Output)
-	expectedJSON, err := os.ReadFile(outputPath)
+	expectedJSON, err := os.ReadFile(expectedPath)
 	if err != nil {
-		t.Fatalf("Failed to read expected output %s: %v", outputPath, err)
+		t.Fatalf("Failed to read expected output %s: %v", expectedPath, err)
 	}
 
 	// Normalize JSON for comparison (parse and re-serialize both)
@@ -258,7 +423,51 @@ func runGoldenTest(t *testing.T, specFile string, spec TestSpec) {
 
 	// Compare
 	if string(expectedNormalized) != string(actualNormalized) {
-		t.Errorf("Output mismatch:\n\nExpected:\n%s\n\nActual:\n%s",
+		t.Errorf("JSON output mismatch:\n\nExpected:\n%s\n\nActual:\n%s",
+			string(expectedNormalized), string(actualNormalized))
+
+		// Show diff
+		showDiff(t, string(expectedNormalized), string(actualNormalized))
+	}
+}
+
+func compareXMLOutput(t *testing.T, doc *Document, expectedPath string) {
+	// Convert to XML format
+	xmlDoc := toXMLDocument(doc)
+
+	// Serialize to XML
+	actualXML, err := xml.MarshalIndent(xmlDoc, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal actual XML output: %v", err)
+	}
+
+	// Add XML declaration
+	actualXML = []byte(xml.Header + string(actualXML))
+
+	// Read expected output
+	expectedXML, err := os.ReadFile(expectedPath)
+	if err != nil {
+		t.Fatalf("Failed to read expected XML output %s: %v", expectedPath, err)
+	}
+
+	// Normalize XML for comparison (parse and re-serialize both)
+	var expectedDoc, actualDoc XMLDocument
+	if err := xml.Unmarshal(expectedXML, &expectedDoc); err != nil {
+		t.Fatalf("Failed to parse expected XML: %v", err)
+	}
+	if err := xml.Unmarshal(actualXML, &actualDoc); err != nil {
+		t.Fatalf("Failed to parse actual XML: %v", err)
+	}
+
+	expectedNormalized, _ := xml.MarshalIndent(expectedDoc, "", "  ")
+	actualNormalized, _ := xml.MarshalIndent(actualDoc, "", "  ")
+
+	expectedNormalized = []byte(xml.Header + string(expectedNormalized))
+	actualNormalized = []byte(xml.Header + string(actualNormalized))
+
+	// Compare
+	if string(expectedNormalized) != string(actualNormalized) {
+		t.Errorf("XML output mismatch:\n\nExpected:\n%s\n\nActual:\n%s",
 			string(expectedNormalized), string(actualNormalized))
 
 		// Show diff

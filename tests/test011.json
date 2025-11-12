@@ -1,6 +1,9 @@
 {
-  "input": "test011-input.kdl",
-  "output": "test011-output.json",
+  "input": "test011-in.kdl",
+  "output": {
+    "json": "test011-out.json",
+    "xml": "test011-out.xml"
+  },
   "title": "hexadecimal numbers",
   "errors": []
 }

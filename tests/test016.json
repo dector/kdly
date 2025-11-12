@@ -1,6 +1,9 @@
 {
-  "input": "test016-input.kdl",
-  "output": "test016-output.json",
+  "input": "test016-in.kdl",
+  "output": {
+    "json": "test016-out.json",
+    "xml": "test016-out.xml"
+  },
   "title": "block comments",
   "errors": []
 }

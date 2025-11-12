@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+  <node name="node2"></node>
+  <node name="node3">
+    <arg type="string">arg2</arg>
+  </node>
+</document>

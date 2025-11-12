@@ -1,6 +1,9 @@
 {
-  "input": "test019-input.kdl",
-  "output": "test019-output.json",
+  "input": "test019-in.kdl",
+  "output": {
+    "json": "test019-out.json",
+    "xml": "test019-out.xml"
+  },
   "title": "mixed arguments and properties",
   "errors": []
 }

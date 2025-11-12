@@ -1,6 +1,9 @@
 {
-  "input": "test012-input.kdl",
-  "output": "test012-output.json",
+  "input": "test012-in.kdl",
+  "output": {
+    "json": "test012-out.json",
+    "xml": "test012-out.xml"
+  },
   "title": "octal numbers",
   "errors": []
 }

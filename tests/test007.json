@@ -1,6 +1,9 @@
 {
-  "input": "test007-input.kdl",
-  "output": "test007-output.json",
+  "input": "test007-in.kdl",
+  "output": {
+    "json": "test007-out.json",
+    "xml": "test007-out.xml"
+  },
   "title": "integer numbers",
   "errors": []
 }
