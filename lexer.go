@@ -139,7 +139,9 @@ func (l *Lexer) NextToken() Token {
 		return l.readHashKeyword(pos)
 	default:
 		// Number or identifier
-		if isDigit(l.ch) || (l.ch == '-' || l.ch == '+') && isDigit(l.peekChar()) {
+		if isDigit(l.ch) ||
+		   ((l.ch == '-' || l.ch == '+') && isDigit(l.peekChar())) ||
+		   (l.ch == '.' && isDigit(l.peekChar())) {
 			return l.readNumber(pos)
 		}
 		if isIdentifierStart(l.ch) {
@@ -392,6 +394,33 @@ func (l *Lexer) readNumber(pos Position) Token {
 	// Handle sign
 	if l.ch == '-' || l.ch == '+' {
 		l.readChar()
+	}
+
+	// Check for leading decimal point (e.g., .5)
+	if l.ch == '.' {
+		l.readChar() // consume .
+		// Must be followed by at least one digit
+		if !isDigit(l.ch) {
+			return NewToken(TokenError, "invalid number: decimal point must be followed by digit", pos)
+		}
+		for isDigit(l.ch) || l.ch == '_' {
+			l.readChar()
+		}
+		// Check if followed by non-identifier chars (if identifier char follows, it's invalid)
+		if isIdentifierChar(l.ch) {
+			return NewToken(TokenError, fmt.Sprintf("invalid number: unexpected character %q after decimal", l.ch), pos)
+		}
+		// Check for exponent
+		if l.ch == 'e' || l.ch == 'E' {
+			l.readChar()
+			if l.ch == '+' || l.ch == '-' {
+				l.readChar()
+			}
+			for isDigit(l.ch) || l.ch == '_' {
+				l.readChar()
+			}
+		}
+		return NewToken(TokenNumber, l.input[start:l.position-1], pos)
 	}
 
 	// Check for hex, octal, binary

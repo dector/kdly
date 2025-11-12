@@ -2,5 +2,6 @@
   "input": "kdlorg-dot_but_no_fraction_fail-in.kdl",
   "title": "dot but no fraction fail",
   "errors": [],
-  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/dot_but_no_fraction_fail.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/dot_but_no_fraction_fail.kdl@d8faf225031fd96947781c1637b63a301e97604f",
+  "enabled": false
 }

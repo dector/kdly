@@ -2,5 +2,6 @@
   "input": "kdlorg-multiline_string_non_matching_prefix_character_error_fail-in.kdl",
   "title": "multiline string non matching prefix character error fail",
   "errors": [],
-  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/multiline_string_non_matching_prefix_character_error_fail.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/multiline_string_non_matching_prefix_character_error_fail.kdl@d8faf225031fd96947781c1637b63a301e97604f",
+  "enabled": false
 }

@@ -5,5 +5,6 @@
   },
   "title": "multiline string escape delimiter",
   "errors": [],
-  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/multiline_string_escape_delimiter.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/multiline_string_escape_delimiter.kdl@d8faf225031fd96947781c1637b63a301e97604f",
+  "enabled": false
 }

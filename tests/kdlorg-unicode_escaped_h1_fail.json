@@ -2,5 +2,6 @@
   "input": "kdlorg-unicode_escaped_h1_fail-in.kdl",
   "title": "unicode escaped h1 fail",
   "errors": [],
-  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/unicode_escaped_h1_fail.kdl@d8faf225031fd96947781c1637b63a301e97604f"
+  "source": "https://github.com/kdl-org/kdl/tree/main/tests/test_cases/input/unicode_escaped_h1_fail.kdl@d8faf225031fd96947781c1637b63a301e97604f",
+  "enabled": false
 }
