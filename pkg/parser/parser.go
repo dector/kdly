@@ -123,14 +123,36 @@ func (p *Parser) skipWhitespace() {
 	}
 }
 
+// isForbiddenInBareIdentifier checks if a rune is forbidden in bare identifiers
+// According to KDL v2 spec, bare identifiers cannot contain:
+// - Whitespace
+// - Reserved syntax characters: []{}()\/#";=
+func isForbiddenInBareIdentifier(r rune) bool {
+	if isWhitespace(r) {
+		return true
+	}
+	// Check reserved syntax characters
+	switch r {
+	case '[', ']', '{', '}', '(', ')', '\\', '/', '#', '"', ';', '=':
+		return true
+	}
+	return false
+}
+
 // isIdentifierStart checks if a rune can start an identifier
+// In KDL v2, bare identifiers can start with almost any character except:
+// - Whitespace and forbidden characters (checked by isForbiddenInBareIdentifier)
+// - Patterns that look like numbers (digit, +/- followed by digit, etc.)
 func isIdentifierStart(r rune) bool {
-	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '_'
+	// For now, accept any non-forbidden character
+	// TODO: Need to reject patterns that look like numbers
+	return !isForbiddenInBareIdentifier(r)
 }
 
 // isIdentifierContinue checks if a rune can continue an identifier
+// In KDL v2, the same rules apply for continuation as for start
 func isIdentifierContinue(r rune) bool {
-	return isIdentifierStart(r) || (r >= '0' && r <= '9') || r == '-'
+	return !isForbiddenInBareIdentifier(r)
 }
 
 // panicAt panics with a formatted error message including position

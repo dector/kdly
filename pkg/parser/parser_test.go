@@ -96,6 +96,42 @@ func TestSingleSimpleNode_withQuotes(t *testing.T) {
 	}
 }
 
+func TestSingleSimpleNode_flexibleBare(t *testing.T) {
+	input := "-<123~!$@%^&*,.:'`|?+>"
+
+	// Expected: Document with 1 Node
+	//   - Node.Name = "-<123~!$@%^&*,.:'`|?+>"
+	//   - Node.Arguments = empty
+	//   - Node.Properties = empty
+	//   - Node.Children = empty
+
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	}
+
+	node := doc.Nodes[0]
+	if node.Name != "-<123~!$@%^&*,.:'`|?+>" {
+		t.Errorf("expected node name 'illegal(){}[]/\\=#;identifier', got %q", node.Name)
+	}
+
+	if len(node.Arguments) != 0 {
+		t.Errorf("expected 0 arguments, got %d", len(node.Arguments))
+	}
+
+	if len(node.Properties) != 0 {
+		t.Errorf("expected 0 properties, got %d", len(node.Properties))
+	}
+
+	if len(node.Children) != 0 {
+		t.Errorf("expected 0 children, got %d", len(node.Children))
+	}
+}
+
 func TestNodeWithStringArgument(t *testing.T) {
 	input := `title "Hello, World"`
 
