@@ -61,6 +61,8 @@ const (
 	stDocumentStart parserState = iota
 	stNodeName
 	stNodeNameQuoted
+	stNodeBody        // After node name, parsing arguments/properties/children
+	stArgumentValue   // Parsing an argument value
 	stDocumentEnd
 )
 
@@ -273,6 +275,46 @@ func (p *Parser) parseQuotedString() string {
 	return "" // unreachable
 }
 
+// parseRawString parses a raw string from the current position
+// Expects the current position to be at the # before the opening quote
+// Raw strings are in the form #"..."# and don't process escape sequences
+// Returns the literal string content (without delimiters)
+func (p *Parser) parseRawString() string {
+	if p.peek() != '#' {
+		p.panicAt("expected # for raw string")
+	}
+	p.advance() // Skip #
+
+	if p.peek() != '"' {
+		p.panicAt("expected \" after # for raw string")
+	}
+	p.advance() // Skip opening quote
+
+	var result []rune
+
+	for !p.isEOF() {
+		ch := p.peek()
+
+		// Look for closing "#
+		if ch == '"' {
+			p.advance()
+			if !p.isEOF() && p.peek() == '#' {
+				p.advance() // Skip closing #
+				return string(result)
+			} else {
+				// Just a quote in the middle, not the end
+				result = append(result, '"')
+			}
+		} else {
+			result = append(result, ch)
+			p.advance()
+		}
+	}
+
+	p.panicAt("unterminated raw string: unexpected EOF")
+	return "" // unreachable
+}
+
 // Parse parses a KDL document from the provided string
 func (p *Parser) Parse(input string) (*Document, error) {
 	// Initialize parser state
@@ -285,6 +327,8 @@ func (p *Parser) Parse(input string) (*Document, error) {
 	doc := &Document{
 		Nodes: make([]Node, 0),
 	}
+
+	var currentNode *Node
 
 	// Main state machine loop
 	for p.state != stDocumentEnd {
@@ -315,15 +359,10 @@ func (p *Parser) Parse(input string) (*Document, error) {
 				Children:   make([]Node, 0),
 			}
 
-			// Add the node to the document
-			doc.Nodes = append(doc.Nodes, node)
+			currentNode = &node
 
-			// Skip any trailing whitespace
-			p.skipWhitespace()
-
-			// For now, we only support single node, so transition to end
-			// Later this will be extended to handle arguments, properties, children, etc.
-			p.state = stDocumentEnd
+			// Transition to parsing node body
+			p.state = stNodeBody
 
 		case stNodeNameQuoted:
 			// Parse the node name (quoted string)
@@ -337,15 +376,94 @@ func (p *Parser) Parse(input string) (*Document, error) {
 				Children:   make([]Node, 0),
 			}
 
-			// Add the node to the document
-			doc.Nodes = append(doc.Nodes, node)
+			currentNode = &node
 
-			// Skip any trailing whitespace
+			// Transition to parsing node body
+			p.state = stNodeBody
+
+		case stNodeBody:
+			// After node name, check for arguments, properties, children, or end
 			p.skipWhitespace()
 
-			// For now, we only support single node, so transition to end
-			// Later this will be extended to handle arguments, properties, children, etc.
-			p.state = stDocumentEnd
+			if p.isEOF() {
+				// End of document - add current node
+				if currentNode != nil {
+					doc.Nodes = append(doc.Nodes, *currentNode)
+					currentNode = nil
+				}
+				p.state = stDocumentEnd
+			} else {
+				ch := p.peek()
+
+				// Check what comes next
+				if ch == '"' {
+					// Quoted string argument
+					p.state = stArgumentValue
+				} else if ch == '#' {
+					// Could be raw string or keyword
+					// Peek ahead to see if it's #"
+					if p.pos+1 < len(p.input) && p.input[p.pos+1] == '"' {
+						// Raw string
+						p.state = stArgumentValue
+					} else {
+						// For now, treat as end of node (could be keyword like #true later)
+						if currentNode != nil {
+							doc.Nodes = append(doc.Nodes, *currentNode)
+							currentNode = nil
+						}
+						p.state = stDocumentEnd
+					}
+				} else if isIdentifierStart(ch) {
+					// Could be a bare identifier argument
+					p.state = stArgumentValue
+				} else {
+					// End of node
+					if currentNode != nil {
+						doc.Nodes = append(doc.Nodes, *currentNode)
+						currentNode = nil
+					}
+					p.state = stDocumentEnd
+				}
+			}
+
+		case stArgumentValue:
+			// Parse an argument value
+			ch := p.peek()
+
+			var argValue Value
+
+			if ch == '"' {
+				// Quoted string
+				strValue := p.parseQuotedString()
+				argValue = Value{
+					Type:  ValueTypeString,
+					Value: strValue,
+				}
+			} else if ch == '#' && p.pos+1 < len(p.input) && p.input[p.pos+1] == '"' {
+				// Raw string
+				strValue := p.parseRawString()
+				argValue = Value{
+					Type:  ValueTypeString,
+					Value: strValue,
+				}
+			} else if isIdentifierStart(ch) {
+				// Bare identifier (treat as string for now)
+				strValue := p.parseIdentifier()
+				argValue = Value{
+					Type:  ValueTypeString,
+					Value: strValue,
+				}
+			} else {
+				p.panicAt("unexpected character in argument value")
+			}
+
+			// Add argument to current node
+			if currentNode != nil {
+				currentNode.Arguments = append(currentNode.Arguments, argValue)
+			}
+
+			// Transition back to node body to check for more arguments
+			p.state = stNodeBody
 
 		default:
 			p.panicAt(fmt.Sprintf("unexpected parser state: %d", p.state))

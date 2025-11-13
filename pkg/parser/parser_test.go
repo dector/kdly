@@ -140,8 +140,142 @@ func TestNodeWithStringArgument(t *testing.T) {
 	//   - Node.Arguments[0].Type = "string"
 	//   - Node.Arguments[0].Value = "Hello, World"
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	}
+
+	node := doc.Nodes[0]
+	if node.Name != "title" {
+		t.Errorf("expected node name 'title', got %q", node.Name)
+	}
+
+	if len(node.Arguments) != 1 {
+		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
+	}
+
+	arg := node.Arguments[0]
+	if arg.Type != ValueTypeString {
+		t.Errorf("expected argument type 'string', got %q", arg.Type)
+	}
+
+	if arg.Value != "Hello, World" {
+		t.Errorf("expected argument value 'Hello, World', got %q", arg.Value)
+	}
+}
+
+func TestNodeWithBareStringArgument(t *testing.T) {
+	input := `node1 this-is-a-string`
+
+	// Expected: Document with 1 Node
+	//   - Node.Name = "node1"
+	//   - Node.Arguments[0].Type = "string"
+	//   - Node.Arguments[0].Value = "this-is-a-string"
+
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	}
+
+	node := doc.Nodes[0]
+	if node.Name != "node1" {
+		t.Errorf("expected node name 'node1', got %q", node.Name)
+	}
+
+	if len(node.Arguments) != 1 {
+		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
+	}
+
+	arg := node.Arguments[0]
+	if arg.Type != ValueTypeString {
+		t.Errorf("expected argument type 'string', got %q", arg.Type)
+	}
+
+	if arg.Value != "this-is-a-string" {
+		t.Errorf("expected argument value 'this-is-a-string', got %q", arg.Value)
+	}
+}
+
+func TestNodeWithEscapedStringArgument(t *testing.T) {
+	input := `node2 "this\nhas\tescapes"`
+
+	// Expected: Document with 1 Node
+	//   - Node.Name = "node2"
+	//   - Node.Arguments[0].Type = "string"
+	//   - Node.Arguments[0].Value = "this\nhas\tescapes" (actual newline and tab)
+
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	}
+
+	node := doc.Nodes[0]
+	if node.Name != "node2" {
+		t.Errorf("expected node name 'node2', got %q", node.Name)
+	}
+
+	if len(node.Arguments) != 1 {
+		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
+	}
+
+	arg := node.Arguments[0]
+	if arg.Type != ValueTypeString {
+		t.Errorf("expected argument type 'string', got %q", arg.Type)
+	}
+
+	expected := "this\nhas\tescapes"
+	if arg.Value != expected {
+		t.Errorf("expected argument value %q, got %q", expected, arg.Value)
+	}
+}
+
+func TestNodeWithRawStringArgument(t *testing.T) {
+	input := `node3 #"C:\Users\zkat\raw\string"#`
+
+	// Expected: Document with 1 Node
+	//   - Node.Name = "node3"
+	//   - Node.Arguments[0].Type = "string"
+	//   - Node.Arguments[0].Value = "C:\Users\zkat\raw\string" (backslashes preserved)
+
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	}
+
+	node := doc.Nodes[0]
+	if node.Name != "node3" {
+		t.Errorf("expected node name 'node3', got %q", node.Name)
+	}
+
+	if len(node.Arguments) != 1 {
+		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
+	}
+
+	arg := node.Arguments[0]
+	if arg.Type != ValueTypeString {
+		t.Errorf("expected argument type 'string', got %q", arg.Type)
+	}
+
+	expected := `C:\Users\zkat\raw\string`
+	if arg.Value != expected {
+		t.Errorf("expected argument value %q, got %q", expected, arg.Value)
+	}
 }
 
 // ============================================================
