@@ -546,30 +546,48 @@ func (p *Parser) parseNumber() string {
 		if next == 'x' || next == 'X' {
 			p.advance() // skip '0'
 			p.advance() // skip 'x'
+			digitStart := p.pos
 			for !p.isEOF() && (isHexDigit(p.peek()) || p.peek() == '_') {
 				p.advance()
 			}
-			return string(p.input[start:p.pos])
+			numStr := string(p.input[start:p.pos])
+			// Validate: must have at least one hex digit after 0x
+			if !hasDigitsAfterPrefix(p.input[digitStart:p.pos], isHexDigit) {
+				p.panicAt("hexadecimal number must have at least one digit after 0x")
+			}
+			return numStr
 		}
 
 		// Binary: 0b or 0B
 		if next == 'b' || next == 'B' {
 			p.advance() // skip '0'
 			p.advance() // skip 'b'
+			digitStart := p.pos
 			for !p.isEOF() && (isBinaryDigit(p.peek()) || p.peek() == '_') {
 				p.advance()
 			}
-			return string(p.input[start:p.pos])
+			numStr := string(p.input[start:p.pos])
+			// Validate: must have at least one binary digit after 0b
+			if !hasDigitsAfterPrefix(p.input[digitStart:p.pos], isBinaryDigit) {
+				p.panicAt("binary number must have at least one digit after 0b")
+			}
+			return numStr
 		}
 
 		// Octal: 0o or 0O
 		if next == 'o' || next == 'O' {
 			p.advance() // skip '0'
 			p.advance() // skip 'o'
+			digitStart := p.pos
 			for !p.isEOF() && (isOctalDigit(p.peek()) || p.peek() == '_') {
 				p.advance()
 			}
-			return string(p.input[start:p.pos])
+			numStr := string(p.input[start:p.pos])
+			// Validate: must have at least one octal digit after 0o
+			if !hasDigitsAfterPrefix(p.input[digitStart:p.pos], isOctalDigit) {
+				p.panicAt("octal number must have at least one digit after 0o")
+			}
+			return numStr
 		}
 	}
 
@@ -599,12 +617,28 @@ func (p *Parser) parseNumber() string {
 		}
 
 		// Parse exponent digits
+		exponentStart := p.pos
 		for !p.isEOF() && (isDigit(p.peek()) || p.peek() == '_') {
 			p.advance()
+		}
+		// Validate: exponent must have at least one digit
+		if !hasDigitsAfterPrefix(p.input[exponentStart:p.pos], isDigit) {
+			p.panicAt("exponent must have at least one digit")
 		}
 	}
 
 	return string(p.input[start:p.pos])
+}
+
+// hasDigitsAfterPrefix checks if the given rune slice contains at least one valid digit
+// (excluding underscores) according to the provided digit validator function
+func hasDigitsAfterPrefix(runes []rune, isValidDigit func(rune) bool) bool {
+	for _, r := range runes {
+		if r != '_' && isValidDigit(r) {
+			return true
+		}
+	}
+	return false
 }
 
 // parseKeyword parses a hash-prefixed keyword (#true, #false, #null, #inf, #-inf, #nan)

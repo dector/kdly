@@ -1505,6 +1505,138 @@ func TestFloatingPointNumbers_SignedAndUnsigned(t *testing.T) {
 }
 
 // ============================================================
+// Malformed Numbers - Validation Tests
+// ============================================================
+
+func TestMalformedNumbers_HexWithoutDigits(t *testing.T) {
+	input := `node 0x`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "hexadecimal number must have at least one digit after 0x")
+}
+
+func TestMalformedNumbers_HexWithOnlyUnderscores(t *testing.T) {
+	input := `node 0x___`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "hexadecimal number must have at least one digit after 0x")
+}
+
+func TestMalformedNumbers_BinaryWithoutDigits(t *testing.T) {
+	input := `node 0b`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "binary number must have at least one digit after 0b")
+}
+
+func TestMalformedNumbers_BinaryWithOnlyUnderscores(t *testing.T) {
+	input := `node 0b___`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "binary number must have at least one digit after 0b")
+}
+
+func TestMalformedNumbers_OctalWithoutDigits(t *testing.T) {
+	input := `node 0o`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "octal number must have at least one digit after 0o")
+}
+
+func TestMalformedNumbers_OctalWithOnlyUnderscores(t *testing.T) {
+	input := `node 0o___`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "octal number must have at least one digit after 0o")
+}
+
+func TestMalformedNumbers_ExponentWithoutDigits(t *testing.T) {
+	input := `node 1e`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "exponent must have at least one digit")
+}
+
+func TestMalformedNumbers_ExponentWithSignButNoDigits(t *testing.T) {
+	input := `node 1e+`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "exponent must have at least one digit")
+}
+
+func TestMalformedNumbers_ExponentWithOnlyUnderscores(t *testing.T) {
+	input := `node 1e___`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "exponent must have at least one digit")
+}
+
+func TestMalformedNumbers_ExponentNegativeSignOnly(t *testing.T) {
+	input := `node 2.5e-`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "exponent must have at least one digit")
+}
+
+func TestMalformedNumbers_UppercaseHexWithoutDigits(t *testing.T) {
+	input := `node 0X`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "hexadecimal number must have at least one digit after 0x")
+}
+
+func TestMalformedNumbers_UppercaseBinaryWithoutDigits(t *testing.T) {
+	input := `node 0B`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "binary number must have at least one digit after 0b")
+}
+
+func TestMalformedNumbers_UppercaseOctalWithoutDigits(t *testing.T) {
+	input := `node 0O`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "octal number must have at least one digit after 0o")
+}
+
+func TestMalformedNumbers_SignedHexWithoutDigits(t *testing.T) {
+	input := `node +0x`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "hexadecimal number must have at least one digit after 0x")
+}
+
+func TestMalformedNumbers_SignedBinaryWithoutDigits(t *testing.T) {
+	input := `node -0b`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "binary number must have at least one digit after 0b")
+}
+
+func TestMalformedNumbers_SignedOctalWithoutDigits(t *testing.T) {
+	input := `node +0o`
+
+	_, err := New().Parse(input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "octal number must have at least one digit after 0o")
+}
+
+// ============================================================
 // Feature 6: Mixed Arguments and Properties - Interleaved syntax
 // ============================================================
 
