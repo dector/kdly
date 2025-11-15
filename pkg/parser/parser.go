@@ -604,6 +604,209 @@ func (p *Parser) parseRawString() string {
 	return "" // unreachable
 }
 
+// parseChildren parses a block of child nodes enclosed in {}
+// Assumes the opening { has already been consumed
+// Returns when the closing } is encountered
+func (p *Parser) parseChildren() ([]Node, error) {
+	children := make([]Node, 0)
+
+	for {
+		p.skipWhitespace()
+
+		// Check for closing brace
+		if p.isEOF() {
+			return nil, fmt.Errorf("unexpected EOF while parsing children block")
+		}
+
+		if p.peek() == '}' {
+			p.advance() // consume '}'
+			return children, nil
+		}
+
+		// Parse a child node
+		var childNode Node
+
+		// Check if node name is quoted or bare
+		if p.peek() == '"' {
+			nodeName := p.parseQuotedString()
+			childNode = Node{
+				Name:       nodeName,
+				Arguments:  make([]Value, 0),
+				Properties: make([]Property, 0),
+				Children:   make([]Node, 0),
+			}
+		} else if isIdentifierStart(p.peek()) {
+			nodeName := p.parseIdentifier()
+			childNode = Node{
+				Name:       nodeName,
+				Arguments:  make([]Value, 0),
+				Properties: make([]Property, 0),
+				Children:   make([]Node, 0),
+			}
+		} else {
+			return nil, fmt.Errorf("expected node name in children block at line %d, col %d", p.line, p.col)
+		}
+
+		// Parse node body (arguments, properties, children)
+		for {
+			// Skip only spaces and tabs, not newlines (newlines terminate nodes)
+			for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t') {
+				p.advance()
+			}
+
+			if p.isEOF() || p.peek() == '}' {
+				// End of this child node
+				break
+			}
+
+			ch := p.peek()
+
+			// Check for newline or semicolon (node terminators)
+			if ch == '\n' || ch == ';' {
+				p.advance()
+				break
+			}
+
+			// Check for children block
+			if ch == '{' {
+				p.advance() // skip '{'
+
+				grandchildren, err := p.parseChildren()
+				if err != nil {
+					return nil, err
+				}
+
+				childNode.Children = grandchildren
+				break
+			}
+
+			// Check for arguments and properties
+			if ch == '"' {
+				// Quoted string argument
+				strValue := p.parseQuotedString()
+				childNode.Arguments = append(childNode.Arguments, Value{
+					Type:  ValueTypeString,
+					Value: strValue,
+				})
+			} else if ch == '#' {
+				// Could be raw string or keyword
+				if p.pos+1 < len(p.input) && p.input[p.pos+1] == '"' {
+					// Raw string
+					strValue := p.parseRawString()
+					childNode.Arguments = append(childNode.Arguments, Value{
+						Type:  ValueTypeString,
+						Value: strValue,
+					})
+				} else {
+					// Keyword (#true, #false, #null)
+					keyword, valueType := p.parseKeyword()
+					childNode.Arguments = append(childNode.Arguments, Value{
+						Type:  valueType,
+						Value: keyword,
+					})
+				}
+			} else if isIdentifierStart(ch) {
+				// Could be a bare identifier argument or property key
+				savedPos := p.pos
+				savedLine := p.line
+				savedCol := p.col
+
+				identifier := p.parseIdentifier()
+
+				// Skip only spaces and tabs after identifier
+				for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t') {
+					p.advance()
+				}
+
+				if !p.isEOF() && p.peek() == '=' {
+					// This is a property: key=value
+					p.advance() // skip '='
+
+					// Skip spaces after =
+					for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t') {
+						p.advance()
+					}
+
+					// Parse property value
+					propValue := p.parseValue()
+					childNode.Properties = append(childNode.Properties, Property{
+						Key:   identifier,
+						Value: propValue,
+					})
+				} else {
+					// This is a bare identifier argument - restore position and parse as argument
+					p.pos = savedPos
+					p.line = savedLine
+					p.col = savedCol
+
+					strValue := p.parseIdentifier()
+					childNode.Arguments = append(childNode.Arguments, Value{
+						Type:  ValueTypeString,
+						Value: strValue,
+					})
+				}
+			} else if p.looksLikeNumber() {
+				// Numeric literal
+				numValue := p.parseNumber()
+				childNode.Arguments = append(childNode.Arguments, Value{
+					Type:  ValueTypeNumber,
+					Value: numValue,
+				})
+			} else {
+				// Unknown character - might be end of node
+				break
+			}
+		}
+
+		children = append(children, childNode)
+	}
+}
+
+// parseValue parses a single value (used for arguments and properties)
+func (p *Parser) parseValue() Value {
+	ch := p.peek()
+
+	if ch == '"' {
+		// Quoted string
+		strValue := p.parseQuotedString()
+		return Value{
+			Type:  ValueTypeString,
+			Value: strValue,
+		}
+	} else if ch == '#' && p.pos+1 < len(p.input) && p.input[p.pos+1] == '"' {
+		// Raw string
+		strValue := p.parseRawString()
+		return Value{
+			Type:  ValueTypeString,
+			Value: strValue,
+		}
+	} else if ch == '#' {
+		// Keyword (#true, #false, #null)
+		keyword, valueType := p.parseKeyword()
+		return Value{
+			Type:  valueType,
+			Value: keyword,
+		}
+	} else if p.looksLikeNumber() {
+		// Numeric literal
+		numValue := p.parseNumber()
+		return Value{
+			Type:  ValueTypeNumber,
+			Value: numValue,
+		}
+	} else if isIdentifierStart(ch) {
+		// Bare identifier string
+		strValue := p.parseIdentifier()
+		return Value{
+			Type:  ValueTypeString,
+			Value: strValue,
+		}
+	} else {
+		p.panicAt("unexpected character in value")
+		return Value{} // unreachable
+	}
+}
+
 // Parse parses a KDL document from the provided string
 func (p *Parser) Parse(input string) (*Document, error) {
 	// Initialize parser state
@@ -688,6 +891,27 @@ func (p *Parser) Parse(input string) (*Document, error) {
 				if ch == '"' {
 					// Quoted string argument
 					p.state = stArgumentValue
+				} else if ch == '{' {
+					// Children block
+					p.advance() // skip '{'
+
+					// Parse children nodes recursively
+					children, err := p.parseChildren()
+					if err != nil {
+						return nil, err
+					}
+
+					if currentNode != nil {
+						currentNode.Children = children
+					}
+
+					// After parsing children, we've consumed the closing '}'
+					// Add the current node to the document and move on
+					if currentNode != nil {
+						doc.Nodes = append(doc.Nodes, *currentNode)
+						currentNode = nil
+					}
+					p.state = stDocumentStart
 				} else if ch == '#' {
 					// Could be raw string or keyword
 					// Peek ahead to see if it's #"

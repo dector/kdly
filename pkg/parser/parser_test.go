@@ -628,15 +628,59 @@ func TestNodeWithChildren(t *testing.T) {
 	//   - Node.Children[0].Children[0].Name = "paragraph"
 	//   - Node.Children[0].Children[0].Arguments[0].Value = "Text"
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	}
+
+	node := doc.Nodes[0]
+	if node.Name != "contents" {
+		t.Errorf("expected node name 'contents', got %q", node.Name)
+	}
+
+	if len(node.Children) != 1 {
+		t.Fatalf("expected 1 child, got %d", len(node.Children))
+	}
+
+	section := node.Children[0]
+	if section.Name != "section" {
+		t.Errorf("expected child node name 'section', got %q", section.Name)
+	}
+
+	if len(section.Arguments) != 1 {
+		t.Fatalf("expected 1 argument on section, got %d", len(section.Arguments))
+	}
+
+	if section.Arguments[0].Value != "First section" {
+		t.Errorf("expected section argument value 'First section', got %q", section.Arguments[0].Value)
+	}
+
+	if len(section.Children) != 1 {
+		t.Fatalf("expected 1 child on section, got %d", len(section.Children))
+	}
+
+	paragraph := section.Children[0]
+	if paragraph.Name != "paragraph" {
+		t.Errorf("expected child node name 'paragraph', got %q", paragraph.Name)
+	}
+
+	if len(paragraph.Arguments) != 1 {
+		t.Fatalf("expected 1 argument on paragraph, got %d", len(paragraph.Arguments))
+	}
+
+	if paragraph.Arguments[0].Value != "Text" {
+		t.Errorf("expected paragraph argument value 'Text', got %q", paragraph.Arguments[0].Value)
+	}
 }
 
 func TestMixedConstructs(t *testing.T) {
 	input := `server {
   host "localhost"
   port 8080
-  // Debug mode
   debug #true
 }`
 
@@ -644,11 +688,65 @@ func TestMixedConstructs(t *testing.T) {
 	//   - Node.Name = "server"
 	//   - Node.Children[0].Name = "host", Arguments[0].Value = "localhost"
 	//   - Node.Children[1].Name = "port", Arguments[0].Value = "8080"
-	//   - Node.Children[2] or Comment between: Type = "line", Content = "Debug mode"
-	//   - Node.Children[3].Name = "debug", Arguments[0].Type = "boolean", Value = "true"
+	//   - Node.Children[2].Name = "debug", Arguments[0].Type = "boolean", Value = "true"
+	// Note: Ignoring comment line for now as per instructions
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	}
+
+	node := doc.Nodes[0]
+	if node.Name != "server" {
+		t.Errorf("expected node name 'server', got %q", node.Name)
+	}
+
+	if len(node.Children) != 3 {
+		t.Fatalf("expected 3 children, got %d", len(node.Children))
+	}
+
+	// Check first child: host "localhost"
+	host := node.Children[0]
+	if host.Name != "host" {
+		t.Errorf("expected child[0] name 'host', got %q", host.Name)
+	}
+	if len(host.Arguments) != 1 {
+		t.Fatalf("expected 1 argument on host, got %d", len(host.Arguments))
+	}
+	if host.Arguments[0].Value != "localhost" {
+		t.Errorf("expected host argument value 'localhost', got %q", host.Arguments[0].Value)
+	}
+
+	// Check second child: port 8080
+	port := node.Children[1]
+	if port.Name != "port" {
+		t.Errorf("expected child[1] name 'port', got %q", port.Name)
+	}
+	if len(port.Arguments) != 1 {
+		t.Fatalf("expected 1 argument on port, got %d", len(port.Arguments))
+	}
+	if port.Arguments[0].Value != "8080" {
+		t.Errorf("expected port argument value '8080', got %q", port.Arguments[0].Value)
+	}
+
+	// Check third child: debug #true
+	debug := node.Children[2]
+	if debug.Name != "debug" {
+		t.Errorf("expected child[2] name 'debug', got %q", debug.Name)
+	}
+	if len(debug.Arguments) != 1 {
+		t.Fatalf("expected 1 argument on debug, got %d", len(debug.Arguments))
+	}
+	if debug.Arguments[0].Type != ValueTypeBoolean {
+		t.Errorf("expected debug argument type 'boolean', got %q", debug.Arguments[0].Type)
+	}
+	if debug.Arguments[0].Value != "true" {
+		t.Errorf("expected debug argument value 'true', got %q", debug.Arguments[0].Value)
+	}
 }
 
 // ============================================================
