@@ -425,9 +425,28 @@ func isForbiddenInBareIdentifier(r rune) bool {
 // - Whitespace and forbidden characters (checked by isForbiddenInBareIdentifier)
 // - Patterns that look like numbers (digit, +/- followed by digit, etc.)
 func isIdentifierStart(r rune) bool {
-	// For now, accept any non-forbidden character
-	// TODO: Need to reject patterns that look like numbers
-	return !isForbiddenInBareIdentifier(r)
+	// Reject forbidden characters
+	if isForbiddenInBareIdentifier(r) {
+		return false
+	}
+
+	// Reject digits - numbers can start with digits
+	if isDigit(r) {
+		return false
+	}
+
+	// Reject decimal point - numbers like .5, +.5, -.5 start with '.'
+	// Note: This is conservative since '.' could be valid in some contexts,
+	// but according to KDL v2 spec, patterns like .5 are numeric literals
+	if r == '.' {
+		return false
+	}
+
+	// Note: We cannot reject '+' and '-' here because they're only number-like
+	// when followed by a digit or '.', which requires lookahead.
+	// Use looksLikeNumber() for full number pattern validation.
+
+	return true
 }
 
 // isIdentifierContinue checks if a rune can continue an identifier
