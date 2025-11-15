@@ -875,7 +875,10 @@ func (p *Parser) Parse(input string) (*Document, error) {
 
 		case stNodeBody:
 			// After node name, check for arguments, properties, children, or end
-			p.skipWhitespace()
+			// Skip only spaces and tabs, not newlines (newlines terminate nodes)
+			for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t') {
+				p.advance()
+			}
 
 			if p.isEOF() {
 				// End of document - add current node
@@ -887,8 +890,16 @@ func (p *Parser) Parse(input string) (*Document, error) {
 			} else {
 				ch := p.peek()
 
-				// Check what comes next
-				if ch == '"' {
+				// Check for newline or semicolon (node terminators)
+				if ch == '\n' || ch == '\r' || ch == ';' {
+					// Node is complete
+					if currentNode != nil {
+						doc.Nodes = append(doc.Nodes, *currentNode)
+						currentNode = nil
+					}
+					p.advance() // consume terminator
+					p.state = stDocumentStart
+				} else if ch == '"' {
 					// Quoted string argument
 					p.state = stArgumentValue
 				} else if ch == '{' {
@@ -922,6 +933,9 @@ func (p *Parser) Parse(input string) (*Document, error) {
 						// Keyword (#true, #false, #null)
 						p.state = stArgumentValue
 					}
+				} else if p.looksLikeNumber() {
+					// Numeric literal - check this BEFORE isIdentifierStart
+					p.state = stArgumentValue
 				} else if isIdentifierStart(ch) {
 					// Could be a bare identifier argument or property key
 					// Look ahead to see if there's an = sign after the identifier
@@ -930,7 +944,11 @@ func (p *Parser) Parse(input string) (*Document, error) {
 					savedCol := p.col
 
 					identifier := p.parseIdentifier()
-					p.skipWhitespace()
+
+					// Skip only spaces and tabs after identifier
+					for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t') {
+						p.advance()
+					}
 
 					if !p.isEOF() && p.peek() == '=' {
 						// This is a property: key=value
