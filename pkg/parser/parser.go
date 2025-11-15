@@ -1289,6 +1289,10 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 					if p.looksLikeNumber() {
 						p.panicAt("node name cannot be a number")
 					}
+					// Check if the character can start a valid identifier
+					if !isIdentifierStart(p.peek()) {
+						p.panicAt(fmt.Sprintf("invalid character for node name: '%c'", p.peek()))
+					}
 					p.state = stNodeName
 				}
 			}
