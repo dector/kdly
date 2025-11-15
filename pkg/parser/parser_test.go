@@ -6,6 +6,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func node(name string) *Node {
+	return &Node{
+		Name:       name,
+		Arguments:  []Value{},
+		Properties: []Property{},
+		Children:   []Node{},
+	}
+}
+
 // ============================================================
 // Level 1: Fundamentals (Empty & Single Elements)
 // ============================================================
@@ -25,12 +34,7 @@ func TestSingleSimpleNode(t *testing.T) {
 	doc, err := New().Parse(input)
 	want := &Document{
 		Nodes: []Node{
-			{
-				Name:       "hello",
-				Arguments:  []Value{},
-				Properties: []Property{},
-				Children:   []Node{},
-			},
+			*node("hello"),
 		},
 	}
 
@@ -44,12 +48,7 @@ func TestSingleSimpleNode_withQuotes(t *testing.T) {
 	doc, err := New().Parse(input)
 	want := &Document{
 		Nodes: []Node{
-			{
-				Name:       `illegal(){}[]/\=#;identifier`,
-				Arguments:  []Value{},
-				Properties: []Property{},
-				Children:   []Node{},
-			},
+			*node(`illegal(){}[]/\=#;identifier`),
 		},
 	}
 
@@ -63,12 +62,7 @@ func TestSingleSimpleNode_flexibleBare(t *testing.T) {
 	doc, err := New().Parse(input)
 	want := &Document{
 		Nodes: []Node{
-			{
-				Name:       "-<123~!$@%^&*,.:'`|?+>",
-				Arguments:  []Value{},
-				Properties: []Property{},
-				Children:   []Node{},
-			},
+			*node("-<123~!$@%^&*,.:'`|?+>"),
 		},
 	}
 
@@ -465,9 +459,9 @@ node3`
 	doc, err := New().Parse(input)
 	want := &Document{
 		Nodes: []Node{
-			{Name: "node1", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
-			{Name: "node2", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
-			{Name: "node3", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			*node("node1"),
+			*node("node2"),
+			*node("node3"),
 		},
 	}
 
@@ -503,7 +497,7 @@ func TestNodeWithEmptyChildren(t *testing.T) {
 	doc, err := New().Parse(input)
 	want := &Document{
 		Nodes: []Node{
-			{Name: "container", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			*node("container"),
 		},
 	}
 
@@ -568,9 +562,9 @@ func TestVariousWhitespace(t *testing.T) {
 	doc, err := New().Parse(input)
 	want := &Document{
 		Nodes: []Node{
-			{Name: "node1", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
-			{Name: "node2", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
-			{Name: "node3", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			*node("node1"),
+			*node("node2"),
+			*node("node3"),
 		},
 	}
 
@@ -584,7 +578,7 @@ func TestQuotedNodeNameOnly(t *testing.T) {
 	doc, err := New().Parse(input)
 	want := &Document{
 		Nodes: []Node{
-			{Name: "node-with-dashes", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			*node("node-with-dashes"),
 		},
 	}
 
@@ -599,8 +593,8 @@ second`
 	doc, err := New().Parse(input)
 	want := &Document{
 		Nodes: []Node{
-			{Name: "first", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
-			{Name: "second", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			*node("first"),
+			*node("second"),
 		},
 	}
 
@@ -614,8 +608,8 @@ func TestSemicolonSeparatedNodes(t *testing.T) {
 	doc, err := New().Parse(input)
 	want := &Document{
 		Nodes: []Node{
-			{Name: "node1", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
-			{Name: "node2", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			*node("node1"),
+			*node("node2"),
 		},
 	}
 
@@ -629,13 +623,13 @@ func TestSemicolonSeparatedNodesWithChildrenInline(t *testing.T) {
 	doc, err := New().Parse(input)
 	want := &Document{
 		Nodes: []Node{
-			{Name: "node1", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			*node("node1"),
 			{
 				Name:       "node2",
 				Arguments:  []Value{},
 				Properties: []Property{},
 				Children: []Node{
-					{Name: "node3", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+					*node("node3"),
 				},
 			},
 		},
@@ -653,13 +647,13 @@ func TestSemicolonSeparatedNodesWithChildrenMultiline(t *testing.T) {
 	doc, err := New().Parse(input)
 	want := &Document{
 		Nodes: []Node{
-			{Name: "node1", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			*node("node1"),
 			{
 				Name:       "node2",
 				Arguments:  []Value{},
 				Properties: []Property{},
 				Children: []Node{
-					{Name: "node3", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+					*node("node3"),
 				},
 			},
 		},
