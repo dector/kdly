@@ -39,6 +39,28 @@ type Property struct {
 	Value Value
 }
 
+// addOrUpdateProperty adds a property to a node.
+// If allowDuplicates is true, all properties are kept (even with duplicate keys).
+// If allowDuplicates is false, follows KDL v2 spec: "rightmost values override duplicates".
+func (n *Node) addOrUpdateProperty(key string, value Value, allowDuplicates bool) {
+	if allowDuplicates {
+		// Keep all duplicates - just append
+		n.Properties = append(n.Properties, Property{Key: key, Value: value})
+		return
+	}
+
+	// Spec-compliant behavior: look for an existing property with the same key
+	for i := range n.Properties {
+		if n.Properties[i].Key == key {
+			// Found duplicate - update the value (rightmost wins)
+			n.Properties[i].Value = value
+			return
+		}
+	}
+	// No duplicate found - append new property
+	n.Properties = append(n.Properties, Property{Key: key, Value: value})
+}
+
 // Comment represents a comment in the document
 // type Comment struct {
 // 	Type    CommentType // "line", "multiline", "slashdash"
@@ -69,17 +91,27 @@ const (
 
 // Parser represents a KDL v2 parser
 type Parser struct {
-	input           []rune // UTF-8 input as runes
-	pos             int    // current position in input
-	line            int    // current line (1-based)
-	col             int    // current column (1-based)
-	state           parserState
-	currentPropKey  string // temporary storage for property key when parsing property value
+	input                    []rune // UTF-8 input as runes
+	pos                      int    // current position in input
+	line                     int    // current line (1-based)
+	col                      int    // current column (1-based)
+	state                    parserState
+	currentPropKey           string // temporary storage for property key when parsing property value
+	allowDuplicateProperties bool   // if true, keeps all duplicate properties; if false (default), rightmost wins per KDL v2 spec
 }
 
 // New creates a new Parser instance
 func New() *Parser {
 	return &Parser{}
+}
+
+// WithAllowDuplicateProperties configures the parser to keep all duplicate properties
+// instead of following the KDL v2 spec behavior (rightmost wins).
+// When set to true, all properties with duplicate keys will be preserved in the Properties slice.
+// When set to false (default), duplicate property keys will follow KDL v2 spec: rightmost value overrides.
+func (p *Parser) WithAllowDuplicateProperties(allow bool) *Parser {
+	p.allowDuplicateProperties = allow
+	return p
 }
 
 // isEOF checks if we've reached the end of input
@@ -1168,10 +1200,7 @@ func (p *Parser) parseChildren() ([]Node, error) {
 
 					// Parse property value (with optional type annotation)
 					propValue := p.parseValueWithOptionalTypeAnnotation()
-					childNode.Properties = append(childNode.Properties, Property{
-						Key:   identifier,
-						Value: propValue,
-					})
+					childNode.addOrUpdateProperty(identifier, propValue, p.allowDuplicateProperties)
 				} else {
 					// This is a bare identifier argument - restore position and parse as argument
 					p.pos = savedPos
@@ -1467,11 +1496,7 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 
 			// Add property to current node
 			if currentNode != nil {
-				prop := Property{
-					Key:   p.currentPropKey,
-					Value: propValue,
-				}
-				currentNode.Properties = append(currentNode.Properties, prop)
+				currentNode.addOrUpdateProperty(p.currentPropKey, propValue, p.allowDuplicateProperties)
 			}
 
 			// Clear the temporary property key
