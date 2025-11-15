@@ -540,10 +540,36 @@ func TestQuotedMultilineString(t *testing.T) {
 	// Expected: Document with 1 Node
 	//   - Node.Name = "message"
 	//   - Node.Arguments[0].Type = "string"
-	//   - Node.Arguments[0].Value = "\n  hello\n  world\n  " (or normalized)
+	//   - Node.Arguments[0].Value = "\nhello\nworld\n" (dedented based on closing quotes)
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	}
+
+	node := doc.Nodes[0]
+	if node.Name != "message" {
+		t.Errorf("expected node name 'message', got %q", node.Name)
+	}
+
+	if len(node.Arguments) != 1 {
+		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
+	}
+
+	arg := node.Arguments[0]
+	if arg.Type != ValueTypeString {
+		t.Errorf("expected argument type 'string', got %q", arg.Type)
+	}
+
+	// The common indentation (2 spaces) should be stripped based on the closing quotes' indentation
+	expected := "\nhello\nworld\n"
+	if arg.Value != expected {
+		t.Errorf("expected argument value %q, got %q", expected, arg.Value)
+	}
 }
 
 func TestRawString(t *testing.T) {
@@ -552,10 +578,36 @@ func TestRawString(t *testing.T) {
 	// Expected: Document with 1 Node
 	//   - Node.Name = "path"
 	//   - Node.Arguments[0].Type = "string"
-	//   - Node.Arguments[0].Value = "C:\\path\\to\\file" (backslashes preserved literally)
+	//   - Node.Arguments[0].Value = "C:\path\to\file" (backslashes preserved literally, no escape processing)
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	}
+
+	node := doc.Nodes[0]
+	if node.Name != "path" {
+		t.Errorf("expected node name 'path', got %q", node.Name)
+	}
+
+	if len(node.Arguments) != 1 {
+		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
+	}
+
+	arg := node.Arguments[0]
+	if arg.Type != ValueTypeString {
+		t.Errorf("expected argument type 'string', got %q", arg.Type)
+	}
+
+	// Raw strings preserve backslashes literally without escape processing
+	expected := `C:\path\to\file`
+	if arg.Value != expected {
+		t.Errorf("expected argument value %q, got %q", expected, arg.Value)
+	}
 }
 
 // ============================================================

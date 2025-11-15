@@ -338,12 +338,37 @@ func (p *Parser) parseIdentifier() string {
 // parseQuotedString parses a quoted string from the current position
 // Expects the current position to be at the opening quote (")
 // Returns the unescaped string content (without quotes)
+// Handles both single-line strings ("...") and multiline strings ("""...""")
 func (p *Parser) parseQuotedString() string {
 	if p.peek() != '"' {
 		p.panicAt("expected opening quote")
 	}
-	p.advance() // Skip opening quote
+	p.advance() // Skip first quote
 
+	// Check if this is a multiline string (""")
+	isMultiline := false
+	if !p.isEOF() && p.peek() == '"' {
+		p.advance() // Skip second quote
+		if !p.isEOF() && p.peek() == '"' {
+			p.advance() // Skip third quote
+			isMultiline = true
+
+			// Multiline strings must be followed by a newline
+			if p.isEOF() || p.peek() != '\n' {
+				p.panicAt("multiline string must be followed by newline")
+			}
+			p.advance() // Skip newline
+		} else {
+			// It was just an empty string ""
+			return ""
+		}
+	}
+
+	if isMultiline {
+		return p.parseMultilineString()
+	}
+
+	// Single-line string parsing
 	var result []rune
 
 	for !p.isEOF() {
@@ -428,6 +453,114 @@ func (p *Parser) parseQuotedString() string {
 	}
 
 	p.panicAt("unterminated string: unexpected EOF")
+	return "" // unreachable
+}
+
+// parseMultilineString parses a multiline string (already past the opening """ and newline)
+// Handles dedentation based on the closing quotes' indentation
+func (p *Parser) parseMultilineString() string {
+	var lines []string
+	var currentLine []rune
+
+	// The first line is always empty (we already consumed the newline after """)
+	// We need to preserve this as a leading newline in the result
+	lines = append(lines, "")
+
+	// Parse lines until we find the closing """
+	for !p.isEOF() {
+		ch := p.peek()
+
+		if ch == '"' {
+			// Check if this is the closing """
+			if p.pos+2 < len(p.input) && p.input[p.pos+1] == '"' && p.input[p.pos+2] == '"' {
+				// Found closing """
+				// Save the current line first (this is the closing quotes line)
+				lines = append(lines, string(currentLine))
+
+				// Skip the closing """
+				p.advance()
+				p.advance()
+				p.advance()
+
+				// Calculate dedentation
+				// The indentation of the last line (closing quotes line) determines what to strip
+				lastLine := lines[len(lines)-1]
+				dedentAmount := 0
+				for dedentAmount < len(lastLine) && (lastLine[dedentAmount] == ' ' || lastLine[dedentAmount] == '\t') {
+					dedentAmount++
+				}
+
+				// Apply dedentation to all lines
+				var result []rune
+				for i, line := range lines {
+					// Strip the common indentation (but only if the line has enough characters)
+					stripped := line
+					if len(line) >= dedentAmount {
+						stripped = line[dedentAmount:]
+					}
+
+					// For all lines except the last (which is the closing quotes line),
+					// add them with their newlines
+					if i < len(lines)-1 {
+						result = append(result, []rune(stripped)...)
+						result = append(result, '\n')
+					} else {
+						// Last line is the closing quotes line - only include if non-empty after stripping
+						if len(stripped) > 0 {
+							result = append(result, []rune(stripped)...)
+						}
+					}
+				}
+
+				return string(result)
+			} else {
+				// Just a regular quote character
+				currentLine = append(currentLine, ch)
+				p.advance()
+			}
+		} else if ch == '\n' {
+			// End of line
+			lines = append(lines, string(currentLine))
+			currentLine = []rune{}
+			p.advance()
+		} else if ch == '\\' {
+			// Escape sequence
+			p.advance() // Skip backslash
+			if p.isEOF() {
+				p.panicAt("unterminated multiline string: EOF after backslash")
+			}
+
+			escapeChar := p.peek()
+			p.advance()
+
+			switch escapeChar {
+			case '"':
+				currentLine = append(currentLine, '"')
+			case '\\':
+				currentLine = append(currentLine, '\\')
+			case '/':
+				currentLine = append(currentLine, '/')
+			case 'n':
+				currentLine = append(currentLine, '\n')
+			case 'r':
+				currentLine = append(currentLine, '\r')
+			case 't':
+				currentLine = append(currentLine, '\t')
+			case 'b':
+				currentLine = append(currentLine, '\b')
+			case 'f':
+				currentLine = append(currentLine, '\f')
+			default:
+				p.panicAt(fmt.Sprintf("invalid escape sequence in multiline string: \\%c", escapeChar))
+			}
+		} else {
+			// Regular character
+			currentLine = append(currentLine, ch)
+			p.advance()
+		}
+	}
+
+	p.panicAt("unterminated multiline string: unexpected EOF")
 	return "" // unreachable
 }
 
