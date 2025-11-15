@@ -265,8 +265,8 @@ pipeline {
 				Properties: []Property{},
 				Children: []Node{
 					{
-						Name:       "stage",
-						Arguments:  []Value{
+						Name: "stage",
+						Arguments: []Value{
 							{Type: ValueTypeString, Value: "build"},
 						},
 						Properties: []Property{},
@@ -425,14 +425,14 @@ func TestParseLoggingConfig(t *testing.T) {
 	assert.Equal(t, want, doc)
 }
 
-// TestParseMetricsWithMultipleArguments tests multiple arguments in properties
+// TestParseMetricsWithMultipleArguments tests multiple arguments
 func TestParseMetricsWithMultipleArguments(t *testing.T) {
 	input := `metrics {
   enabled #true
   provider prometheus
   port 9090
 
-  histogram http_duration buckets=0.005 buckets=0.01 buckets=0.025
+  histogram http_duration 0.005 0.01 0.025
 }`
 
 	doc, err := New().Parse(input)
@@ -471,13 +471,12 @@ func TestParseMetricsWithMultipleArguments(t *testing.T) {
 						Name: "histogram",
 						Arguments: []Value{
 							{Type: ValueTypeString, Value: "http_duration"},
+							{Type: ValueTypeNumber, Value: "0.005"},
+							{Type: ValueTypeNumber, Value: "0.01"},
+							{Type: ValueTypeNumber, Value: "0.025"},
 						},
-						Properties: []Property{
-							{Key: "buckets", Value: Value{Type: ValueTypeNumber, Value: "0.005"}},
-							{Key: "buckets", Value: Value{Type: ValueTypeNumber, Value: "0.01"}},
-							{Key: "buckets", Value: Value{Type: ValueTypeNumber, Value: "0.025"}},
-						},
-						Children: []Node{},
+						Properties: []Property{},
+						Children:   []Node{},
 					},
 				},
 			},

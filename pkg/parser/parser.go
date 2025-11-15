@@ -1118,6 +1118,12 @@ func (p *Parser) parseChildren() ([]Node, error) {
 			return children, nil
 		}
 
+		// Check for slashdash comment - skip the entire next node
+		if p.isSlashdash() {
+			p.skipSlashdashNode()
+			continue // Skip to next iteration to parse the next node
+		}
+
 		// Parse a child node
 		var childNode Node
 
