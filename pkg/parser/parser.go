@@ -128,6 +128,7 @@ func (p *Parser) skipWhitespace() {
 }
 
 // skipComments skips line comments (//) and multiline comments (/* */)
+// Note: This does NOT handle slashdash (/-) comments, which are handled separately
 func (p *Parser) skipComments() bool {
 	if p.isEOF() {
 		return false
@@ -185,6 +186,170 @@ func (p *Parser) skipComments() bool {
 	return false
 }
 
+// isSlashdash checks if we're at a slashdash comment (/-)
+func (p *Parser) isSlashdash() bool {
+	if p.isEOF() {
+		return false
+	}
+
+	if p.peek() != '/' {
+		return false
+	}
+
+	if p.pos+1 >= len(p.input) {
+		return false
+	}
+
+	return p.input[p.pos+1] == '-'
+}
+
+// skipSlashdashValue skips a single argument or property value commented with slashdash (/-)
+// This can also skip children blocks
+func (p *Parser) skipSlashdashValue() {
+	// Skip the /- prefix
+	p.advance() // skip /
+	p.advance() // skip -
+
+	// Skip whitespace between /- and the value
+	p.skipInlineWhitespaceAndComments()
+
+	ch := p.peek()
+
+	// Check if this is a children block
+	if ch == '{' {
+		p.skipChildrenBlock()
+		return
+	}
+
+	// Check if this is a property (identifier followed by =)
+	if isIdentifierStart(ch) && ch != '(' && ch != '"' && ch != '#' {
+		// Could be a property or just a bare identifier argument
+		_ = p.parseIdentifier()
+		p.skipInlineWhitespaceAndComments()
+
+		if !p.isEOF() && p.peek() == '=' {
+			// This is a property - skip the = and the value
+			p.advance() // skip =
+			p.skipInlineWhitespaceAndComments()
+			// Skip the property value
+			p.parseValueWithOptionalTypeAnnotation()
+		}
+		// Otherwise, it was just an argument (already consumed)
+	} else {
+		// Parse as a regular argument value (handles type annotations, strings, numbers, etc.)
+		p.parseValueWithOptionalTypeAnnotation()
+	}
+}
+
+// skipSlashdashNode skips a node that's commented out with slashdash (/-)
+func (p *Parser) skipSlashdashNode() {
+	// Skip the /- prefix
+	p.advance() // skip /
+	p.advance() // skip -
+
+	// Skip whitespace between /- and the node
+	p.skipInlineWhitespaceAndComments()
+
+	// Skip the node name (quoted or bare identifier)
+	if p.peek() == '"' {
+		// Skip quoted node name
+		p.parseQuotedString()
+	} else {
+		// Skip bare identifier node name
+		p.parseIdentifier()
+	}
+
+	// Skip the rest of the node (arguments, properties, children)
+	// We need to skip until we hit a node terminator or children block
+	for !p.isEOF() {
+		p.skipInlineWhitespaceAndComments()
+
+		if p.isEOF() {
+			break
+		}
+
+		ch := p.peek()
+
+		// Node terminators
+		if ch == '\n' || ch == '\r' || ch == ';' {
+			p.advance()
+			break
+		}
+
+		// Children block - need to skip the entire block
+		if ch == '{' {
+			p.skipChildrenBlock()
+			break
+		}
+
+		// Skip any value (argument or property)
+		// First, try to parse the identifier for the property key
+		if ch == '(' || ch == '"' || ch == '#' || p.looksLikeNumber() || isIdentifierStart(ch) {
+			// Check if this is a property (identifier followed by =)
+			// Try to read what looks like a property key
+			if isIdentifierStart(ch) && ch != '(' && ch != '"' && ch != '#' {
+				_ = p.parseIdentifier()
+				p.skipInlineWhitespaceAndComments()
+
+				if !p.isEOF() && p.peek() == '=' {
+					// This is a property
+					p.advance() // skip =
+					p.skipInlineWhitespaceAndComments()
+					// Skip the property value
+					p.parseValueWithOptionalTypeAnnotation()
+				} else {
+					// Not a property, restore and parse as argument
+					// We already consumed it as an identifier, which is fine
+					// It was an argument value
+				}
+			} else {
+				// Parse as a regular argument value
+				p.parseValueWithOptionalTypeAnnotation()
+			}
+		} else {
+			// Unknown character, skip it
+			p.advance()
+		}
+	}
+}
+
+// skipChildrenBlock skips an entire children block {...}
+func (p *Parser) skipChildrenBlock() {
+	if p.peek() != '{' {
+		return
+	}
+
+	p.advance() // skip opening {
+
+	depth := 1
+	for !p.isEOF() && depth > 0 {
+		p.skipWhitespaceAndComments()
+
+		if p.isEOF() {
+			break
+		}
+
+		ch := p.peek()
+
+		if ch == '{' {
+			p.advance()
+			depth++
+		} else if ch == '}' {
+			p.advance()
+			depth--
+		} else if ch == '"' {
+			// Skip quoted strings
+			p.parseQuotedString()
+		} else if ch == 'r' && p.pos+1 < len(p.input) && (p.input[p.pos+1] == '"' || p.input[p.pos+1] == '#') {
+			// Skip raw strings
+			p.parseRawString()
+		} else {
+			// Skip any other character
+			p.advance()
+		}
+	}
+}
+
 // skipWhitespaceAndComments skips both whitespace and comments
 func (p *Parser) skipWhitespaceAndComments() {
 	for {
@@ -199,6 +364,7 @@ func (p *Parser) skipWhitespaceAndComments() {
 }
 
 // skipInlineWhitespaceAndComments skips spaces, tabs, and comments but NOT newlines
+// However, line continuation (backslash before newline) allows newlines to be treated as whitespace
 func (p *Parser) skipInlineWhitespaceAndComments() {
 	for {
 		startPos := p.pos
@@ -206,6 +372,29 @@ func (p *Parser) skipInlineWhitespaceAndComments() {
 		for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t') {
 			p.advance()
 		}
+
+		// Check for line continuation: backslash followed by newline
+		if !p.isEOF() && p.peek() == '\\' {
+			// Look ahead to see if there's a newline
+			if p.pos+1 < len(p.input) {
+				nextCh := p.input[p.pos+1]
+				if nextCh == '\n' {
+					// Line continuation - skip backslash and newline
+					p.advance() // skip \
+					p.advance() // skip \n
+					continue    // Continue skipping whitespace after the continuation
+				} else if nextCh == '\r' {
+					// Handle \r\n or just \r
+					p.advance() // skip \
+					p.advance() // skip \r
+					if !p.isEOF() && p.peek() == '\n' {
+						p.advance() // skip \n
+					}
+					continue // Continue skipping whitespace after the continuation
+				}
+			}
+		}
+
 		// Try to skip comments
 		p.skipComments()
 		// If position didn't change, we're done
@@ -275,6 +464,7 @@ func (p *Parser) panicAt(message string) {
 // looksLikeNumber checks if the current position starts a numeric literal
 // Returns true for: integers (123), floats (1.23), hex (0x1f), binary (0b101), octal (0o77)
 // Also handles signs (+123, -456) and scientific notation (1e10, 1.5e-3)
+// Also handles decimal-only numbers like .5, +.5, -.5
 func (p *Parser) looksLikeNumber() bool {
 	pos := p.pos
 	if pos >= len(p.input) {
@@ -290,6 +480,12 @@ func (p *Parser) looksLikeNumber() bool {
 			return false
 		}
 		ch = p.input[pos]
+
+		// +. or -. patterns (even without following digit) look like numbers
+		// and must be quoted according to KDL v2 spec
+		if ch == '.' {
+			return true
+		}
 	}
 
 	// Check for hex (0x), binary (0b), or octal (0o) prefix
@@ -300,8 +496,17 @@ func (p *Parser) looksLikeNumber() bool {
 		}
 	}
 
-	// Must start with a digit
-	return isDigit(ch)
+	// Can start with a digit or a decimal point (for numbers like .5, +.5, -.5)
+	if isDigit(ch) {
+		return true
+	}
+
+	// Check for decimal point followed by a digit (.5, +.5, -.5)
+	if ch == '.' && pos+1 < len(p.input) && isDigit(p.input[pos+1]) {
+		return true
+	}
+
+	return false
 }
 
 // parseNumber parses a numeric literal from the current position
@@ -383,7 +588,7 @@ func (p *Parser) parseNumber() string {
 	return string(p.input[start:p.pos])
 }
 
-// parseKeyword parses a hash-prefixed keyword (#true, #false, #null)
+// parseKeyword parses a hash-prefixed keyword (#true, #false, #null, #inf, #-inf, #nan)
 // Returns the keyword without the # prefix and the value type
 func (p *Parser) parseKeyword() (string, ValueType) {
 	if p.peek() != '#' {
@@ -391,8 +596,16 @@ func (p *Parser) parseKeyword() (string, ValueType) {
 	}
 	p.advance() // Skip #
 
-	// Parse the keyword identifier
-	keyword := p.parseIdentifier()
+	// Check for negative sign (for #-inf)
+	var keyword string
+	if p.peek() == '-' {
+		p.advance() // Skip -
+		ident := p.parseIdentifier()
+		keyword = "-" + ident
+	} else {
+		// Parse the keyword identifier
+		keyword = p.parseIdentifier()
+	}
 
 	// Determine the type based on the keyword
 	switch keyword {
@@ -400,6 +613,8 @@ func (p *Parser) parseKeyword() (string, ValueType) {
 		return keyword, ValueTypeBoolean
 	case "null":
 		return keyword, ValueTypeNull
+	case "inf", "-inf", "nan":
+		return keyword, ValueTypeNumber
 	default:
 		p.panicAt(fmt.Sprintf("unknown keyword: #%s", keyword))
 		return "", ValueTypeString // unreachable
@@ -935,7 +1150,20 @@ func (p *Parser) parseValue() Value {
 }
 
 // Parse parses a KDL document from the provided string
-func (p *Parser) Parse(input string) (*Document, error) {
+func (p *Parser) Parse(input string) (doc *Document, err error) {
+	// Recover from panics and convert to error
+	defer func() {
+		if r := recover(); r != nil {
+			if e, ok := r.(string); ok {
+				err = fmt.Errorf("%s", e)
+			} else if e, ok := r.(error); ok {
+				err = e
+			} else {
+				err = fmt.Errorf("parse error: %v", r)
+			}
+		}
+	}()
+
 	// Initialize parser state
 	p.input = []rune(input)
 	p.pos = 0
@@ -943,7 +1171,7 @@ func (p *Parser) Parse(input string) (*Document, error) {
 	p.col = 1
 	p.state = stDocumentStart
 
-	doc := &Document{
+	doc = &Document{
 		Nodes: make([]Node, 0),
 	}
 
@@ -957,11 +1185,20 @@ func (p *Parser) Parse(input string) (*Document, error) {
 			if p.isEOF() {
 				// Empty document or no more nodes
 				p.state = stDocumentEnd
+			} else if p.isSlashdash() {
+				// Slashdash comment - skip the entire next node
+				p.skipSlashdashNode()
+				// Stay in stDocumentStart to process the next node
 			} else {
 				// Transition to parsing node name based on next character
 				if p.peek() == '"' {
 					p.state = stNodeNameQuoted
 				} else {
+					// Check if it looks like a number - if so, it's an error
+					// because node names can't be numbers
+					if p.looksLikeNumber() {
+						p.panicAt("node name cannot be a number")
+					}
 					p.state = stNodeName
 				}
 			}
@@ -1012,6 +1249,10 @@ func (p *Parser) Parse(input string) (*Document, error) {
 					currentNode = nil
 				}
 				p.state = stDocumentEnd
+			} else if p.isSlashdash() {
+				// Slashdash comment - skip the next argument or property
+				p.skipSlashdashValue()
+				// Stay in stNodeBody to continue parsing
 			} else {
 				ch := p.peek()
 
@@ -1112,10 +1353,23 @@ func (p *Parser) Parse(input string) (*Document, error) {
 
 		case stPropertyValue:
 			// Parse a property value (after key=)
-			p.skipWhitespaceAndComments()
+			p.skipInlineWhitespaceAndComments()
 
-			// Parse property value (with optional type annotation)
-			propValue := p.parseValueWithOptionalTypeAnnotation()
+			var propValue Value
+
+			// Check for slashdash commenting out the value
+			if p.isSlashdash() {
+				// Skip the slashdash and the value it comments out
+				p.skipSlashdashValue()
+				// Use an empty string value as placeholder
+				propValue = Value{
+					Type:  ValueTypeString,
+					Value: "",
+				}
+			} else {
+				// Parse property value (with optional type annotation)
+				propValue = p.parseValueWithOptionalTypeAnnotation()
+			}
 
 			// Add property to current node
 			if currentNode != nil {
