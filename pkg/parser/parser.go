@@ -127,6 +127,94 @@ func (p *Parser) skipWhitespace() {
 	}
 }
 
+// skipComments skips line comments (//) and multiline comments (/* */)
+func (p *Parser) skipComments() bool {
+	if p.isEOF() {
+		return false
+	}
+
+	ch := p.peek()
+	if ch != '/' {
+		return false
+	}
+
+	// Need to check the next character
+	if p.pos+1 >= len(p.input) {
+		return false
+	}
+
+	nextCh := p.input[p.pos+1]
+
+	if nextCh == '/' {
+		// Line comment - skip until end of line or EOF
+		p.advance() // skip first /
+		p.advance() // skip second /
+		for !p.isEOF() && p.peek() != '\n' {
+			p.advance()
+		}
+		// Optionally skip the newline itself
+		if !p.isEOF() && p.peek() == '\n' {
+			p.advance()
+		}
+		return true
+	} else if nextCh == '*' {
+		// Multiline comment - skip until matching */
+		// KDL v2 supports nested multiline comments
+		p.advance() // skip /
+		p.advance() // skip *
+
+		depth := 1
+		for !p.isEOF() && depth > 0 {
+			if p.peek() == '/' && p.pos+1 < len(p.input) && p.input[p.pos+1] == '*' {
+				// Found nested comment start
+				p.advance() // skip /
+				p.advance() // skip *
+				depth++
+			} else if p.peek() == '*' && p.pos+1 < len(p.input) && p.input[p.pos+1] == '/' {
+				// Found comment end
+				p.advance() // skip *
+				p.advance() // skip /
+				depth--
+			} else {
+				p.advance()
+			}
+		}
+		return true
+	}
+
+	return false
+}
+
+// skipWhitespaceAndComments skips both whitespace and comments
+func (p *Parser) skipWhitespaceAndComments() {
+	for {
+		startPos := p.pos
+		p.skipWhitespace()
+		p.skipComments()
+		// If position didn't change, we're done
+		if p.pos == startPos {
+			break
+		}
+	}
+}
+
+// skipInlineWhitespaceAndComments skips spaces, tabs, and comments but NOT newlines
+func (p *Parser) skipInlineWhitespaceAndComments() {
+	for {
+		startPos := p.pos
+		// Skip spaces and tabs only (not newlines)
+		for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t') {
+			p.advance()
+		}
+		// Try to skip comments
+		p.skipComments()
+		// If position didn't change, we're done
+		if p.pos == startPos {
+			break
+		}
+	}
+}
+
 // isForbiddenInBareIdentifier checks if a rune is forbidden in bare identifiers
 // According to KDL v2 spec, bare identifiers cannot contain:
 // - Whitespace
@@ -604,6 +692,76 @@ func (p *Parser) parseRawString() string {
 	return "" // unreachable
 }
 
+// parseValueWithOptionalTypeAnnotation parses an optional type annotation followed by a value
+// Returns the parsed Value with TypeAnnotation field set if present
+func (p *Parser) parseValueWithOptionalTypeAnnotation() Value {
+	var typeAnnotation string
+
+	// Check for type annotation: (type)
+	if p.peek() == '(' {
+		p.advance() // skip '('
+
+		// Parse the type annotation (identifier)
+		typeAnnotation = p.parseIdentifier()
+
+		// Expect closing ')'
+		if p.peek() != ')' {
+			p.panicAt("expected ')' after type annotation")
+		}
+		p.advance() // skip ')'
+	}
+
+	// Now parse the actual value
+	ch := p.peek()
+	var value Value
+
+	if ch == '"' {
+		// Quoted string
+		strValue := p.parseQuotedString()
+		value = Value{
+			Type:           ValueTypeString,
+			Value:          strValue,
+			TypeAnnotation: typeAnnotation,
+		}
+	} else if ch == '#' && p.pos+1 < len(p.input) && p.input[p.pos+1] == '"' {
+		// Raw string
+		strValue := p.parseRawString()
+		value = Value{
+			Type:           ValueTypeString,
+			Value:          strValue,
+			TypeAnnotation: typeAnnotation,
+		}
+	} else if ch == '#' {
+		// Keyword (#true, #false, #null)
+		keyword, valueType := p.parseKeyword()
+		value = Value{
+			Type:           valueType,
+			Value:          keyword,
+			TypeAnnotation: typeAnnotation,
+		}
+	} else if p.looksLikeNumber() {
+		// Numeric literal
+		numValue := p.parseNumber()
+		value = Value{
+			Type:           ValueTypeNumber,
+			Value:          numValue,
+			TypeAnnotation: typeAnnotation,
+		}
+	} else if isIdentifierStart(ch) {
+		// Bare identifier string
+		strValue := p.parseIdentifier()
+		value = Value{
+			Type:           ValueTypeString,
+			Value:          strValue,
+			TypeAnnotation: typeAnnotation,
+		}
+	} else {
+		p.panicAt("unexpected character in value")
+	}
+
+	return value
+}
+
 // parseChildren parses a block of child nodes enclosed in {}
 // Assumes the opening { has already been consumed
 // Returns when the closing } is encountered
@@ -611,7 +769,7 @@ func (p *Parser) parseChildren() ([]Node, error) {
 	children := make([]Node, 0)
 
 	for {
-		p.skipWhitespace()
+		p.skipWhitespaceAndComments()
 
 		// Check for closing brace
 		if p.isEOF() {
@@ -650,9 +808,7 @@ func (p *Parser) parseChildren() ([]Node, error) {
 		// Parse node body (arguments, properties, children)
 		for {
 			// Skip only spaces and tabs, not newlines (newlines terminate nodes)
-			for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t') {
-				p.advance()
-			}
+			p.skipInlineWhitespaceAndComments()
 
 			if p.isEOF() || p.peek() == '}' {
 				// End of this child node
@@ -681,37 +837,10 @@ func (p *Parser) parseChildren() ([]Node, error) {
 			}
 
 			// Check for arguments and properties
-			if ch == '"' {
-				// Quoted string argument
-				strValue := p.parseQuotedString()
-				childNode.Arguments = append(childNode.Arguments, Value{
-					Type:  ValueTypeString,
-					Value: strValue,
-				})
-			} else if ch == '#' {
-				// Could be raw string or keyword
-				if p.pos+1 < len(p.input) && p.input[p.pos+1] == '"' {
-					// Raw string
-					strValue := p.parseRawString()
-					childNode.Arguments = append(childNode.Arguments, Value{
-						Type:  ValueTypeString,
-						Value: strValue,
-					})
-				} else {
-					// Keyword (#true, #false, #null)
-					keyword, valueType := p.parseKeyword()
-					childNode.Arguments = append(childNode.Arguments, Value{
-						Type:  valueType,
-						Value: keyword,
-					})
-				}
-			} else if p.looksLikeNumber() {
-				// Numeric literal - check this BEFORE isIdentifierStart
-				numValue := p.parseNumber()
-				childNode.Arguments = append(childNode.Arguments, Value{
-					Type:  ValueTypeNumber,
-					Value: numValue,
-				})
+			if ch == '(' || ch == '"' || ch == '#' || p.looksLikeNumber() {
+				// This looks like an argument value (possibly with type annotation)
+				argValue := p.parseValueWithOptionalTypeAnnotation()
+				childNode.Arguments = append(childNode.Arguments, argValue)
 			} else if isIdentifierStart(ch) {
 				// Could be a bare identifier argument or property key
 				savedPos := p.pos
@@ -730,12 +859,10 @@ func (p *Parser) parseChildren() ([]Node, error) {
 					p.advance() // skip '='
 
 					// Skip spaces after =
-					for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t') {
-						p.advance()
-					}
+					p.skipInlineWhitespaceAndComments()
 
-					// Parse property value
-					propValue := p.parseValue()
+					// Parse property value (with optional type annotation)
+					propValue := p.parseValueWithOptionalTypeAnnotation()
 					childNode.Properties = append(childNode.Properties, Property{
 						Key:   identifier,
 						Value: propValue,
@@ -826,7 +953,7 @@ func (p *Parser) Parse(input string) (*Document, error) {
 	for p.state != stDocumentEnd {
 		switch p.state {
 		case stDocumentStart:
-			p.skipWhitespace()
+			p.skipWhitespaceAndComments()
 			if p.isEOF() {
 				// Empty document or no more nodes
 				p.state = stDocumentEnd
@@ -876,9 +1003,7 @@ func (p *Parser) Parse(input string) (*Document, error) {
 		case stNodeBody:
 			// After node name, check for arguments, properties, children, or end
 			// Skip only spaces and tabs, not newlines (newlines terminate nodes)
-			for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t') {
-				p.advance()
-			}
+			p.skipInlineWhitespaceAndComments()
 
 			if p.isEOF() {
 				// End of document - add current node
@@ -899,6 +1024,9 @@ func (p *Parser) Parse(input string) (*Document, error) {
 					}
 					p.advance() // consume terminator
 					p.state = stDocumentStart
+				} else if ch == '(' {
+					// Type annotation followed by value
+					p.state = stArgumentValue
 				} else if ch == '"' {
 					// Quoted string argument
 					p.state = stArgumentValue
@@ -946,9 +1074,7 @@ func (p *Parser) Parse(input string) (*Document, error) {
 					identifier := p.parseIdentifier()
 
 					// Skip only spaces and tabs after identifier
-					for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t') {
-						p.advance()
-					}
+					p.skipInlineWhitespaceAndComments()
 
 					if !p.isEOF() && p.peek() == '=' {
 						// This is a property: key=value
@@ -973,49 +1099,8 @@ func (p *Parser) Parse(input string) (*Document, error) {
 			}
 
 		case stArgumentValue:
-			// Parse an argument value
-			ch := p.peek()
-
-			var argValue Value
-
-			if ch == '"' {
-				// Quoted string
-				strValue := p.parseQuotedString()
-				argValue = Value{
-					Type:  ValueTypeString,
-					Value: strValue,
-				}
-			} else if ch == '#' && p.pos+1 < len(p.input) && p.input[p.pos+1] == '"' {
-				// Raw string
-				strValue := p.parseRawString()
-				argValue = Value{
-					Type:  ValueTypeString,
-					Value: strValue,
-				}
-			} else if ch == '#' {
-				// Keyword (#true, #false, #null)
-				keyword, valueType := p.parseKeyword()
-				argValue = Value{
-					Type:  valueType,
-					Value: keyword,
-				}
-			} else if p.looksLikeNumber() {
-				// Numeric literal
-				numValue := p.parseNumber()
-				argValue = Value{
-					Type:  ValueTypeNumber,
-					Value: numValue,
-				}
-			} else if isIdentifierStart(ch) {
-				// Bare identifier string
-				strValue := p.parseIdentifier()
-				argValue = Value{
-					Type:  ValueTypeString,
-					Value: strValue,
-				}
-			} else {
-				p.panicAt("unexpected character in argument value")
-			}
+			// Parse an argument value (with optional type annotation)
+			argValue := p.parseValueWithOptionalTypeAnnotation()
 
 			// Add argument to current node
 			if currentNode != nil {
@@ -1027,49 +1112,10 @@ func (p *Parser) Parse(input string) (*Document, error) {
 
 		case stPropertyValue:
 			// Parse a property value (after key=)
-			p.skipWhitespace()
-			ch := p.peek()
+			p.skipWhitespaceAndComments()
 
-			var propValue Value
-
-			if ch == '"' {
-				// Quoted string
-				strValue := p.parseQuotedString()
-				propValue = Value{
-					Type:  ValueTypeString,
-					Value: strValue,
-				}
-			} else if ch == '#' && p.pos+1 < len(p.input) && p.input[p.pos+1] == '"' {
-				// Raw string
-				strValue := p.parseRawString()
-				propValue = Value{
-					Type:  ValueTypeString,
-					Value: strValue,
-				}
-			} else if ch == '#' {
-				// Keyword (#true, #false, #null)
-				keyword, valueType := p.parseKeyword()
-				propValue = Value{
-					Type:  valueType,
-					Value: keyword,
-				}
-			} else if p.looksLikeNumber() {
-				// Numeric literal
-				numValue := p.parseNumber()
-				propValue = Value{
-					Type:  ValueTypeNumber,
-					Value: numValue,
-				}
-			} else if isIdentifierStart(ch) {
-				// Bare identifier string
-				strValue := p.parseIdentifier()
-				propValue = Value{
-					Type:  ValueTypeString,
-					Value: strValue,
-				}
-			} else {
-				p.panicAt("unexpected character in property value")
-			}
+			// Parse property value (with optional type annotation)
+			propValue := p.parseValueWithOptionalTypeAnnotation()
 
 			// Add property to current node
 			if currentNode != nil {

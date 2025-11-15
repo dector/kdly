@@ -257,13 +257,32 @@ func TestNodeWithProperties(t *testing.T) {
 func TestTypeAnnotations(t *testing.T) {
 	input := `numbers (u8)10 (uuid)"123e4567-e89b-12d3-a456-426614174000"`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "numbers"
-	//   - Node.Arguments[0].Type = "number", Value = "10", TypeAnnotation = "u8"
-	//   - Node.Arguments[1].Type = "string", Value = "123e4567-e89b-12d3-a456-426614174000", TypeAnnotation = "uuid"
+	doc, err := New().Parse(input)
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "numbers",
+				Arguments: []Value{
+					{
+						Type:           ValueTypeNumber,
+						Value:          "10",
+						TypeAnnotation: "u8",
+					},
+					{
+						Type:           ValueTypeString,
+						Value:          "123e4567-e89b-12d3-a456-426614174000",
+						TypeAnnotation: "uuid",
+					},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
+
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 // ============================================================
@@ -273,24 +292,20 @@ func TestTypeAnnotations(t *testing.T) {
 func TestLineComment(t *testing.T) {
 	input := `// This is a comment`
 
-	// Expected: Document with 1 Comment
-	//   - Comment.Type = "line"
-	//   - Comment.Content = "This is a comment" (or " This is a comment" with leading space)
+	doc, err := New().Parse(input)
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	assert.NoError(t, err)
+	assert.Empty(t, doc.Nodes)
 }
 
 func TestMultilineComment(t *testing.T) {
 	input := `/* Multiline
    comment */`
 
-	// Expected: Document with 1 Comment
-	//   - Comment.Type = "multiline"
-	//   - Comment.Content = "Multiline\n   comment" (preserving internal formatting)
+	doc, err := New().Parse(input)
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	assert.NoError(t, err)
+	assert.Empty(t, doc.Nodes)
 }
 
 func TestSlashdashComment(t *testing.T) {
@@ -303,6 +318,87 @@ func TestSlashdashComment(t *testing.T) {
 
 	_ = input
 	t.Skip("Parser not yet implemented")
+}
+
+func TestLineCommentWithNodes(t *testing.T) {
+	input := `// This is a comment
+node1
+// Another comment
+node2`
+
+	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			*node("node1"),
+			*node("node2"),
+		},
+	}
+
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
+}
+
+func TestMultilineCommentWithNodes(t *testing.T) {
+	input := `/* Comment before */
+node1
+/* Comment
+   in between */
+node2
+/* Comment after */`
+
+	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			*node("node1"),
+			*node("node2"),
+		},
+	}
+
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
+}
+
+func TestInlineCommentAfterNode(t *testing.T) {
+	input := `node1 // inline comment`
+
+	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			*node("node1"),
+		},
+	}
+
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
+}
+
+func TestMixedComments(t *testing.T) {
+	input := `// Line comment
+/* Multiline comment */
+node1
+// Another line comment
+node2 // inline
+/* Final comment */`
+
+	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			*node("node1"),
+			*node("node2"),
+		},
+	}
+
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
+}
+
+func TestNestedMultilineComment(t *testing.T) {
+	input := `/* /* comment inside comment */ */`
+
+	doc, err := New().Parse(input)
+
+	assert.NoError(t, err)
+	assert.Empty(t, doc.Nodes)
 }
 
 // ============================================================
