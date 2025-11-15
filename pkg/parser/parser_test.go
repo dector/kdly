@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // ============================================================
@@ -14,154 +13,151 @@ import (
 func TestEmptyDocument(t *testing.T) {
 	input := ``
 
-	// Expected: Document with no nodes
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
+
+	assert.NoError(t, err)
 	assert.Empty(t, doc.Nodes)
 }
 
 func TestSingleSimpleNode(t *testing.T) {
 	input := `hello`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "hello"
-	//   - Node.Arguments = empty
-	//   - Node.Properties = empty
-	//   - Node.Children = empty
-
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
-	require.Len(t, doc.Nodes, 1)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:       "hello",
+				Arguments:  []Value{},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	node := doc.Nodes[0]
-	assert.Equal(t, "hello", node.Name)
-	assert.Empty(t, node.Arguments)
-	assert.Empty(t, node.Properties)
-	assert.Empty(t, node.Children)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestSingleSimpleNode_withQuotes(t *testing.T) {
 	input := `"illegal(){}[]/\\=#;identifier"`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "illegal(){}[]/\=#;identifier"
-	//   - Node.Arguments = empty
-	//   - Node.Properties = empty
-	//   - Node.Children = empty
-
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
-	require.Len(t, doc.Nodes, 1)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:       `illegal(){}[]/\=#;identifier`,
+				Arguments:  []Value{},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	node := doc.Nodes[0]
-	assert.Equal(t, `illegal(){}[]/\=#;identifier`, node.Name)
-	assert.Empty(t, node.Arguments)
-	assert.Empty(t, node.Properties)
-	assert.Empty(t, node.Children)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestSingleSimpleNode_flexibleBare(t *testing.T) {
 	input := "-<123~!$@%^&*,.:'`|?+>"
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "-<123~!$@%^&*,.:'`|?+>"
-	//   - Node.Arguments = empty
-	//   - Node.Properties = empty
-	//   - Node.Children = empty
-
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
-	require.Len(t, doc.Nodes, 1)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:       "-<123~!$@%^&*,.:'`|?+>",
+				Arguments:  []Value{},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	node := doc.Nodes[0]
-	assert.Equal(t, "-<123~!$@%^&*,.:'`|?+>", node.Name)
-	assert.Empty(t, node.Arguments)
-	assert.Empty(t, node.Properties)
-	assert.Empty(t, node.Children)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestNodeWithStringArgument(t *testing.T) {
 	input := `title "Hello, World"`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "title"
-	//   - Node.Arguments[0].Type = "string"
-	//   - Node.Arguments[0].Value = "Hello, World"
-
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
-	require.Len(t, doc.Nodes, 1)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "title",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "Hello, World"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	node := doc.Nodes[0]
-	assert.Equal(t, "title", node.Name)
-	require.Len(t, node.Arguments, 1)
-
-	arg := node.Arguments[0]
-	assert.Equal(t, ValueTypeString, arg.Type)
-	assert.Equal(t, "Hello, World", arg.Value)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestNodeWithBareStringArgument(t *testing.T) {
 	input := `node1 this-is-a-string`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "node1"
-	//   - Node.Arguments[0].Type = "string"
-	//   - Node.Arguments[0].Value = "this-is-a-string"
-
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
-	require.Len(t, doc.Nodes, 1)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node1",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "this-is-a-string"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	node := doc.Nodes[0]
-	assert.Equal(t, "node1", node.Name)
-	require.Len(t, node.Arguments, 1)
-
-	arg := node.Arguments[0]
-	assert.Equal(t, ValueTypeString, arg.Type)
-	assert.Equal(t, "this-is-a-string", arg.Value)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestNodeWithEscapedStringArgument(t *testing.T) {
 	input := `node2 "this\nhas\tescapes"`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "node2"
-	//   - Node.Arguments[0].Type = "string"
-	//   - Node.Arguments[0].Value = "this\nhas\tescapes" (actual newline and tab)
-
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
-	require.Len(t, doc.Nodes, 1)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node2",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "this\nhas\tescapes"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	node := doc.Nodes[0]
-	assert.Equal(t, "node2", node.Name)
-	require.Len(t, node.Arguments, 1)
-
-	arg := node.Arguments[0]
-	assert.Equal(t, ValueTypeString, arg.Type)
-	assert.Equal(t, "this\nhas\tescapes", arg.Value)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestNodeWithRawStringArgument(t *testing.T) {
 	input := `node3 #"C:\Users\zkat\raw\string"#`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "node3"
-	//   - Node.Arguments[0].Type = "string"
-	//   - Node.Arguments[0].Value = "C:\Users\zkat\raw\string" (backslashes preserved)
-
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
-	require.Len(t, doc.Nodes, 1)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node3",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: `C:\Users\zkat\raw\string`},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	node := doc.Nodes[0]
-	assert.Equal(t, "node3", node.Name)
-	require.Len(t, node.Arguments, 1)
-
-	arg := node.Arguments[0]
-	assert.Equal(t, ValueTypeString, arg.Type)
-	assert.Equal(t, `C:\Users\zkat\raw\string`, arg.Value)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 // ============================================================
@@ -171,75 +167,69 @@ func TestNodeWithRawStringArgument(t *testing.T) {
 func TestNodeWithMultipleArguments(t *testing.T) {
 	input := `bookmarks 12 15 188 1234`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "bookmarks"
-	//   - Node.Arguments has 4 elements, all Type="number"
-	//   - Values: "12", "15", "188", "1234"
-
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
-	require.Len(t, doc.Nodes, 1)
-
-	node := doc.Nodes[0]
-	assert.Equal(t, "bookmarks", node.Name)
-	require.Len(t, node.Arguments, 4)
-
-	expectedValues := []string{"12", "15", "188", "1234"}
-	for i, expected := range expectedValues {
-		arg := node.Arguments[i]
-		assert.Equal(t, ValueTypeNumber, arg.Type, "argument[%d] type", i)
-		assert.Equal(t, expected, arg.Value, "argument[%d] value", i)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "bookmarks",
+				Arguments: []Value{
+					{Type: ValueTypeNumber, Value: "12"},
+					{Type: ValueTypeNumber, Value: "15"},
+					{Type: ValueTypeNumber, Value: "188"},
+					{Type: ValueTypeNumber, Value: "1234"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
 	}
+
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestNodeWithBooleanAndNull(t *testing.T) {
 	input := `flags #true #false #null`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "flags"
-	//   - Node.Arguments[0].Type = "boolean", Value = "true"
-	//   - Node.Arguments[1].Type = "boolean", Value = "false"
-	//   - Node.Arguments[2].Type = "null"
-
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
-	require.Len(t, doc.Nodes, 1)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "flags",
+				Arguments: []Value{
+					{Type: ValueTypeBoolean, Value: "true"},
+					{Type: ValueTypeBoolean, Value: "false"},
+					{Type: ValueTypeNull, Value: "null"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	node := doc.Nodes[0]
-	assert.Equal(t, "flags", node.Name)
-	require.Len(t, node.Arguments, 3)
-
-	// Check first argument: #true
-	assert.Equal(t, ValueTypeBoolean, node.Arguments[0].Type)
-	assert.Equal(t, "true", node.Arguments[0].Value)
-
-	// Check second argument: #false
-	assert.Equal(t, ValueTypeBoolean, node.Arguments[1].Type)
-	assert.Equal(t, "false", node.Arguments[1].Value)
-
-	// Check third argument: #null
-	assert.Equal(t, ValueTypeNull, node.Arguments[2].Type)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestNodeWithHexNumbers(t *testing.T) {
 	input := `color 0xdeadbeef`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "color"
-	//   - Node.Arguments[0].Type = "number"
-	//   - Node.Arguments[0].Value = "0xdeadbeef" (or converted to decimal)
-
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
-	require.Len(t, doc.Nodes, 1)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "color",
+				Arguments: []Value{
+					{Type: ValueTypeNumber, Value: "0xdeadbeef"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	node := doc.Nodes[0]
-	assert.Equal(t, "color", node.Name)
-	require.Len(t, node.Arguments, 1)
-
-	arg := node.Arguments[0]
-	assert.Equal(t, ValueTypeNumber, arg.Type)
-	assert.Equal(t, "0xdeadbeef", arg.Value)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 // ============================================================
@@ -249,35 +239,25 @@ func TestNodeWithHexNumbers(t *testing.T) {
 func TestNodeWithProperties(t *testing.T) {
 	input := `author "Alex Monad" email=alex@example.com active=#true`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "author"
-	//   - Node.Arguments[0].Type = "string", Value = "Alex Monad"
-	//   - Node.Properties[0].Key = "email", Value.Type = "string", Value.Value = "alex@example.com"
-	//   - Node.Properties[1].Key = "active", Value.Type = "boolean", Value.Value = "true"
-
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
-	require.Len(t, doc.Nodes, 1)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "author",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "Alex Monad"},
+				},
+				Properties: []Property{
+					{Key: "email", Value: Value{Type: ValueTypeString, Value: "alex@example.com"}},
+					{Key: "active", Value: Value{Type: ValueTypeBoolean, Value: "true"}},
+				},
+				Children: []Node{},
+			},
+		},
+	}
 
-	node := doc.Nodes[0]
-	assert.Equal(t, "author", node.Name)
-	require.Len(t, node.Arguments, 1)
-
-	arg := node.Arguments[0]
-	assert.Equal(t, ValueTypeString, arg.Type)
-	assert.Equal(t, "Alex Monad", arg.Value)
-
-	require.Len(t, node.Properties, 2)
-
-	// Check first property: email=alex@example.com
-	assert.Equal(t, "email", node.Properties[0].Key)
-	assert.Equal(t, ValueTypeString, node.Properties[0].Value.Type)
-	assert.Equal(t, "alex@example.com", node.Properties[0].Value.Value)
-
-	// Check second property: active=#true
-	assert.Equal(t, "active", node.Properties[1].Key)
-	assert.Equal(t, ValueTypeBoolean, node.Properties[1].Value.Type)
-	assert.Equal(t, "true", node.Properties[1].Value.Value)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestTypeAnnotations(t *testing.T) {
@@ -341,45 +321,43 @@ func TestQuotedMultilineString(t *testing.T) {
   world
   """`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "message"
-	//   - Node.Arguments[0].Type = "string"
-	//   - Node.Arguments[0].Value = "\nhello\nworld\n" (dedented based on closing quotes)
-
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
-	require.Len(t, doc.Nodes, 1)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "message",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "\nhello\nworld\n"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	node := doc.Nodes[0]
-	assert.Equal(t, "message", node.Name)
-	require.Len(t, node.Arguments, 1)
-
-	arg := node.Arguments[0]
-	assert.Equal(t, ValueTypeString, arg.Type)
-	// The common indentation (2 spaces) should be stripped based on the closing quotes' indentation
-	assert.Equal(t, "\nhello\nworld\n", arg.Value)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestRawString(t *testing.T) {
 	input := `path #"C:\path\to\file"#`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "path"
-	//   - Node.Arguments[0].Type = "string"
-	//   - Node.Arguments[0].Value = "C:\path\to\file" (backslashes preserved literally, no escape processing)
-
 	doc, err := New().Parse(input)
-	require.NoError(t, err)
-	require.Len(t, doc.Nodes, 1)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "path",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: `C:\path\to\file`},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	node := doc.Nodes[0]
-	assert.Equal(t, "path", node.Name)
-	require.Len(t, node.Arguments, 1)
-
-	arg := node.Arguments[0]
-	assert.Equal(t, ValueTypeString, arg.Type)
-	// Raw strings preserve backslashes literally without escape processing
-	assert.Equal(t, `C:\path\to\file`, arg.Value)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 // ============================================================
@@ -394,9 +372,7 @@ func TestNodeWithChildren(t *testing.T) {
 }`
 
 	doc, err := New().Parse(input)
-	assert.NoError(t, err)
-
-	expected := &Document{
+	want := &Document{
 		Nodes: []Node{
 			{
 				Name:       "contents",
@@ -425,7 +401,8 @@ func TestNodeWithChildren(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, expected, doc)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestMixedConstructs(t *testing.T) {
@@ -436,9 +413,7 @@ func TestMixedConstructs(t *testing.T) {
 }`
 
 	doc, err := New().Parse(input)
-	assert.NoError(t, err)
-
-	expected := &Document{
+	want := &Document{
 		Nodes: []Node{
 			{
 				Name:       "server",
@@ -474,7 +449,8 @@ func TestMixedConstructs(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, expected, doc)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 // ============================================================
@@ -487,9 +463,7 @@ node2
 node3`
 
 	doc, err := New().Parse(input)
-	assert.NoError(t, err)
-
-	expected := &Document{
+	want := &Document{
 		Nodes: []Node{
 			{Name: "node1", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
 			{Name: "node2", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
@@ -497,16 +471,15 @@ node3`
 		},
 	}
 
-	assert.Equal(t, expected, doc)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestNodeWithOnlyProperties(t *testing.T) {
 	input := `config debug=#true port=8080`
 
 	doc, err := New().Parse(input)
-	assert.NoError(t, err)
-
-	expected := &Document{
+	want := &Document{
 		Nodes: []Node{
 			{
 				Name:      "config",
@@ -520,22 +493,22 @@ func TestNodeWithOnlyProperties(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, expected, doc)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestNodeWithEmptyChildren(t *testing.T) {
 	input := `container {}`
 
 	doc, err := New().Parse(input)
-	assert.NoError(t, err)
-
-	expected := &Document{
+	want := &Document{
 		Nodes: []Node{
 			{Name: "container", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
 		},
 	}
 
-	assert.Equal(t, expected, doc)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestNumbersWithUnderscores(t *testing.T) {
@@ -593,9 +566,7 @@ func TestVariousWhitespace(t *testing.T) {
 	input := "node1\n\nnode2\n  \nnode3"
 
 	doc, err := New().Parse(input)
-	assert.NoError(t, err)
-
-	expected := &Document{
+	want := &Document{
 		Nodes: []Node{
 			{Name: "node1", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
 			{Name: "node2", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
@@ -603,22 +574,22 @@ func TestVariousWhitespace(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, expected, doc)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestQuotedNodeNameOnly(t *testing.T) {
 	input := `"node-with-dashes"`
 
 	doc, err := New().Parse(input)
-	assert.NoError(t, err)
-
-	expected := &Document{
+	want := &Document{
 		Nodes: []Node{
 			{Name: "node-with-dashes", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
 		},
 	}
 
-	assert.Equal(t, expected, doc)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestSiblingsAfterNesting(t *testing.T) {
@@ -626,16 +597,15 @@ func TestSiblingsAfterNesting(t *testing.T) {
 second`
 
 	doc, err := New().Parse(input)
-	assert.NoError(t, err)
-
-	expected := &Document{
+	want := &Document{
 		Nodes: []Node{
 			{Name: "first", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
 			{Name: "second", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
 		},
 	}
 
-	assert.Equal(t, expected, doc)
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestSemicolonSeparatedNodes(t *testing.T) {
