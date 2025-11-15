@@ -1000,6 +1000,89 @@ func TestRawString(t *testing.T) {
 	assert.Equal(t, want, doc)
 }
 
+func TestMultiLevelRawStrings(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "double hash raw string",
+			input: `node ##"hello world"##`,
+			want:  "hello world",
+		},
+		{
+			name:  "triple hash raw string",
+			input: `node ###"hello world"###`,
+			want:  "hello world",
+		},
+		{
+			name:  "raw string containing single hash quote",
+			input: `node ##"string with #" inside"##`,
+			want:  `string with #" inside`,
+		},
+		{
+			name:  "raw string containing double hash quote",
+			input: `node ###"string with ##" inside"###`,
+			want:  `string with ##" inside`,
+		},
+		{
+			name:  "raw string with quote in middle",
+			input: `node ##"hello"world"##`,
+			want:  `hello"world`,
+		},
+		{
+			name:  "raw string with hash in middle",
+			input: `node ##"hello#world"##`,
+			want:  `hello#world`,
+		},
+		{
+			name:  "raw string with mismatched closing",
+			input: `node ###"content"#not closing yet"###`,
+			want:  `content"#not closing yet`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc, err := New().Parse(tt.input)
+			assert.NoError(t, err)
+			assert.Equal(t, 1, len(doc.Nodes), "should have one node")
+			assert.Equal(t, 1, len(doc.Nodes[0].Arguments), "should have one argument")
+			assert.Equal(t, tt.want, doc.Nodes[0].Arguments[0].Value, "raw string value mismatch")
+		})
+	}
+}
+
+func TestMultiLevelRawStrings_ErrorCases(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{
+			name:  "insufficient closing hashes",
+			input: `node ###"hello world"##`,
+		},
+		{
+			name:  "no closing delimiter at all",
+			input: `node ##"hello world`,
+		},
+		{
+			name:  "too many closing hashes - also fails",
+			input: `node ##"hello"###`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := New().Parse(tt.input)
+			// All of these should fail with unterminated raw string
+			assert.Error(t, err, "expected parse error for: %s", tt.input)
+			assert.Contains(t, err.Error(), "unterminated raw string", "error should mention unterminated raw string")
+		})
+	}
+}
+
 // ============================================================
 // Level 6: Children & Nested Structures
 // ============================================================

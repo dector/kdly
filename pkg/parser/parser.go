@@ -340,7 +340,7 @@ func (p *Parser) skipChildrenBlock() {
 		} else if ch == '"' {
 			// Skip quoted strings
 			p.parseQuotedString()
-		} else if ch == 'r' && p.pos+1 < len(p.input) && (p.input[p.pos+1] == '"' || p.input[p.pos+1] == '#') {
+		} else if p.isRawString() {
 			// Skip raw strings
 			p.parseRawString()
 		} else {
@@ -867,15 +867,39 @@ func (p *Parser) parseMultilineString() string {
 	return "" // unreachable
 }
 
+// isRawString checks if the current position is at the start of a raw string
+// Raw strings start with one or more # followed by a quote: #", ##", ###", etc.
+func (p *Parser) isRawString() bool {
+	if p.peek() != '#' {
+		return false
+	}
+
+	// Look ahead to find a quote after one or more #
+	pos := p.pos
+	for pos < len(p.input) && p.input[pos] == '#' {
+		pos++
+	}
+
+	// Check if we found a quote after the # symbols
+	return pos < len(p.input) && p.input[pos] == '"'
+}
+
 // parseRawString parses a raw string from the current position
-// Expects the current position to be at the # before the opening quote
-// Raw strings are in the form #"..."# and don't process escape sequences
+// Expects the current position to be at the first # before the opening quote
+// Raw strings are in the form #"..."#, ##"..."##, ###"..."###, etc.
+// The number of # symbols before and after must match
 // Returns the literal string content (without delimiters)
 func (p *Parser) parseRawString() string {
 	if p.peek() != '#' {
 		p.panicAt("expected # for raw string")
 	}
-	p.advance() // Skip #
+
+	// Count the number of # symbols at the start
+	hashCount := 0
+	for !p.isEOF() && p.peek() == '#' {
+		hashCount++
+		p.advance()
+	}
 
 	if p.peek() != '"' {
 		p.panicAt("expected \" after # for raw string")
@@ -887,16 +911,29 @@ func (p *Parser) parseRawString() string {
 	for !p.isEOF() {
 		ch := p.peek()
 
-		// Look for closing "#
+		// Look for closing quote followed by matching # count
 		if ch == '"' {
-			p.advance()
-			if !p.isEOF() && p.peek() == '#' {
-				p.advance() // Skip closing #
-				return string(result)
-			} else {
-				// Just a quote in the middle, not the end
-				result = append(result, '"')
+			p.advance() // Skip the quote
+
+			// Count # symbols after the quote
+			closingHashCount := 0
+			for !p.isEOF() && p.peek() == '#' {
+				closingHashCount++
+				p.advance()
 			}
+
+			// Check if we found the matching closing delimiter
+			if closingHashCount == hashCount {
+				return string(result)
+			}
+
+			// Not the closing delimiter, restore position and add to result
+			// Add the quote and all the # symbols we consumed
+			result = append(result, '"')
+			for i := 0; i < closingHashCount; i++ {
+				result = append(result, '#')
+			}
+			// Don't restore position - we've already advanced past the # symbols
 		} else {
 			result = append(result, ch)
 			p.advance()
@@ -938,7 +975,7 @@ func (p *Parser) parseValueWithOptionalTypeAnnotation() Value {
 			Value:          strValue,
 			TypeAnnotation: typeAnnotation,
 		}
-	} else if ch == '#' && p.pos+1 < len(p.input) && p.input[p.pos+1] == '"' {
+	} else if p.isRawString() {
 		// Raw string
 		strValue := p.parseRawString()
 		value = Value{
@@ -1115,7 +1152,7 @@ func (p *Parser) parseValue() Value {
 			Type:  ValueTypeString,
 			Value: strValue,
 		}
-	} else if ch == '#' && p.pos+1 < len(p.input) && p.input[p.pos+1] == '"' {
+	} else if p.isRawString() {
 		// Raw string
 		strValue := p.parseRawString()
 		return Value{
