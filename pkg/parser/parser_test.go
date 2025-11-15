@@ -1,6 +1,11 @@
 package parser
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
 // ============================================================
 // Level 1: Fundamentals (Empty & Single Elements)
@@ -11,17 +16,8 @@ func TestEmptyDocument(t *testing.T) {
 
 	// Expected: Document with no nodes
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 0 {
-		t.Errorf("expected 0 nodes, got %d", len(doc.Nodes))
-	}
-
-	// if len(doc.Comments) != 0 {
-	// 	t.Errorf("expected 0 comments, got %d", len(doc.Comments))
-	// }
+	require.NoError(t, err)
+	assert.Empty(t, doc.Nodes)
 }
 
 func TestSingleSimpleNode(t *testing.T) {
@@ -34,30 +30,14 @@ func TestSingleSimpleNode(t *testing.T) {
 	//   - Node.Children = empty
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
+	require.NoError(t, err)
+	require.Len(t, doc.Nodes, 1)
 
 	node := doc.Nodes[0]
-	if node.Name != "hello" {
-		t.Errorf("expected node name 'hello', got %q", node.Name)
-	}
-
-	if len(node.Arguments) != 0 {
-		t.Errorf("expected 0 arguments, got %d", len(node.Arguments))
-	}
-
-	if len(node.Properties) != 0 {
-		t.Errorf("expected 0 properties, got %d", len(node.Properties))
-	}
-
-	if len(node.Children) != 0 {
-		t.Errorf("expected 0 children, got %d", len(node.Children))
-	}
+	assert.Equal(t, "hello", node.Name)
+	assert.Empty(t, node.Arguments)
+	assert.Empty(t, node.Properties)
+	assert.Empty(t, node.Children)
 }
 
 func TestSingleSimpleNode_withQuotes(t *testing.T) {
@@ -70,30 +50,14 @@ func TestSingleSimpleNode_withQuotes(t *testing.T) {
 	//   - Node.Children = empty
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
+	require.NoError(t, err)
+	require.Len(t, doc.Nodes, 1)
 
 	node := doc.Nodes[0]
-	if node.Name != `illegal(){}[]/\=#;identifier` {
-		t.Errorf("expected node name 'illegal(){}[]/\\=#;identifier', got %q", node.Name)
-	}
-
-	if len(node.Arguments) != 0 {
-		t.Errorf("expected 0 arguments, got %d", len(node.Arguments))
-	}
-
-	if len(node.Properties) != 0 {
-		t.Errorf("expected 0 properties, got %d", len(node.Properties))
-	}
-
-	if len(node.Children) != 0 {
-		t.Errorf("expected 0 children, got %d", len(node.Children))
-	}
+	assert.Equal(t, `illegal(){}[]/\=#;identifier`, node.Name)
+	assert.Empty(t, node.Arguments)
+	assert.Empty(t, node.Properties)
+	assert.Empty(t, node.Children)
 }
 
 func TestSingleSimpleNode_flexibleBare(t *testing.T) {
@@ -106,30 +70,14 @@ func TestSingleSimpleNode_flexibleBare(t *testing.T) {
 	//   - Node.Children = empty
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
+	require.NoError(t, err)
+	require.Len(t, doc.Nodes, 1)
 
 	node := doc.Nodes[0]
-	if node.Name != "-<123~!$@%^&*,.:'`|?+>" {
-		t.Errorf("expected node name 'illegal(){}[]/\\=#;identifier', got %q", node.Name)
-	}
-
-	if len(node.Arguments) != 0 {
-		t.Errorf("expected 0 arguments, got %d", len(node.Arguments))
-	}
-
-	if len(node.Properties) != 0 {
-		t.Errorf("expected 0 properties, got %d", len(node.Properties))
-	}
-
-	if len(node.Children) != 0 {
-		t.Errorf("expected 0 children, got %d", len(node.Children))
-	}
+	assert.Equal(t, "-<123~!$@%^&*,.:'`|?+>", node.Name)
+	assert.Empty(t, node.Arguments)
+	assert.Empty(t, node.Properties)
+	assert.Empty(t, node.Children)
 }
 
 func TestNodeWithStringArgument(t *testing.T) {
@@ -141,31 +89,16 @@ func TestNodeWithStringArgument(t *testing.T) {
 	//   - Node.Arguments[0].Value = "Hello, World"
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
+	require.NoError(t, err)
+	require.Len(t, doc.Nodes, 1)
 
 	node := doc.Nodes[0]
-	if node.Name != "title" {
-		t.Errorf("expected node name 'title', got %q", node.Name)
-	}
-
-	if len(node.Arguments) != 1 {
-		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
-	}
+	assert.Equal(t, "title", node.Name)
+	require.Len(t, node.Arguments, 1)
 
 	arg := node.Arguments[0]
-	if arg.Type != ValueTypeString {
-		t.Errorf("expected argument type 'string', got %q", arg.Type)
-	}
-
-	if arg.Value != "Hello, World" {
-		t.Errorf("expected argument value 'Hello, World', got %q", arg.Value)
-	}
+	assert.Equal(t, ValueTypeString, arg.Type)
+	assert.Equal(t, "Hello, World", arg.Value)
 }
 
 func TestNodeWithBareStringArgument(t *testing.T) {
@@ -177,31 +110,16 @@ func TestNodeWithBareStringArgument(t *testing.T) {
 	//   - Node.Arguments[0].Value = "this-is-a-string"
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
+	require.NoError(t, err)
+	require.Len(t, doc.Nodes, 1)
 
 	node := doc.Nodes[0]
-	if node.Name != "node1" {
-		t.Errorf("expected node name 'node1', got %q", node.Name)
-	}
-
-	if len(node.Arguments) != 1 {
-		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
-	}
+	assert.Equal(t, "node1", node.Name)
+	require.Len(t, node.Arguments, 1)
 
 	arg := node.Arguments[0]
-	if arg.Type != ValueTypeString {
-		t.Errorf("expected argument type 'string', got %q", arg.Type)
-	}
-
-	if arg.Value != "this-is-a-string" {
-		t.Errorf("expected argument value 'this-is-a-string', got %q", arg.Value)
-	}
+	assert.Equal(t, ValueTypeString, arg.Type)
+	assert.Equal(t, "this-is-a-string", arg.Value)
 }
 
 func TestNodeWithEscapedStringArgument(t *testing.T) {
@@ -213,32 +131,16 @@ func TestNodeWithEscapedStringArgument(t *testing.T) {
 	//   - Node.Arguments[0].Value = "this\nhas\tescapes" (actual newline and tab)
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
+	require.NoError(t, err)
+	require.Len(t, doc.Nodes, 1)
 
 	node := doc.Nodes[0]
-	if node.Name != "node2" {
-		t.Errorf("expected node name 'node2', got %q", node.Name)
-	}
-
-	if len(node.Arguments) != 1 {
-		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
-	}
+	assert.Equal(t, "node2", node.Name)
+	require.Len(t, node.Arguments, 1)
 
 	arg := node.Arguments[0]
-	if arg.Type != ValueTypeString {
-		t.Errorf("expected argument type 'string', got %q", arg.Type)
-	}
-
-	expected := "this\nhas\tescapes"
-	if arg.Value != expected {
-		t.Errorf("expected argument value %q, got %q", expected, arg.Value)
-	}
+	assert.Equal(t, ValueTypeString, arg.Type)
+	assert.Equal(t, "this\nhas\tescapes", arg.Value)
 }
 
 func TestNodeWithRawStringArgument(t *testing.T) {
@@ -250,32 +152,16 @@ func TestNodeWithRawStringArgument(t *testing.T) {
 	//   - Node.Arguments[0].Value = "C:\Users\zkat\raw\string" (backslashes preserved)
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
+	require.NoError(t, err)
+	require.Len(t, doc.Nodes, 1)
 
 	node := doc.Nodes[0]
-	if node.Name != "node3" {
-		t.Errorf("expected node name 'node3', got %q", node.Name)
-	}
-
-	if len(node.Arguments) != 1 {
-		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
-	}
+	assert.Equal(t, "node3", node.Name)
+	require.Len(t, node.Arguments, 1)
 
 	arg := node.Arguments[0]
-	if arg.Type != ValueTypeString {
-		t.Errorf("expected argument type 'string', got %q", arg.Type)
-	}
-
-	expected := `C:\Users\zkat\raw\string`
-	if arg.Value != expected {
-		t.Errorf("expected argument value %q, got %q", expected, arg.Value)
-	}
+	assert.Equal(t, ValueTypeString, arg.Type)
+	assert.Equal(t, `C:\Users\zkat\raw\string`, arg.Value)
 }
 
 // ============================================================
@@ -291,32 +177,18 @@ func TestNodeWithMultipleArguments(t *testing.T) {
 	//   - Values: "12", "15", "188", "1234"
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
+	require.NoError(t, err)
+	require.Len(t, doc.Nodes, 1)
 
 	node := doc.Nodes[0]
-	if node.Name != "bookmarks" {
-		t.Errorf("expected node name 'bookmarks', got %q", node.Name)
-	}
-
-	if len(node.Arguments) != 4 {
-		t.Fatalf("expected 4 arguments, got %d", len(node.Arguments))
-	}
+	assert.Equal(t, "bookmarks", node.Name)
+	require.Len(t, node.Arguments, 4)
 
 	expectedValues := []string{"12", "15", "188", "1234"}
 	for i, expected := range expectedValues {
 		arg := node.Arguments[i]
-		if arg.Type != ValueTypeNumber {
-			t.Errorf("expected argument[%d] type 'number', got %q", i, arg.Type)
-		}
-		if arg.Value != expected {
-			t.Errorf("expected argument[%d] value %q, got %q", i, expected, arg.Value)
-		}
+		assert.Equal(t, ValueTypeNumber, arg.Type, "argument[%d] type", i)
+		assert.Equal(t, expected, arg.Value, "argument[%d] value", i)
 	}
 }
 
@@ -330,46 +202,23 @@ func TestNodeWithBooleanAndNull(t *testing.T) {
 	//   - Node.Arguments[2].Type = "null"
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
+	require.NoError(t, err)
+	require.Len(t, doc.Nodes, 1)
 
 	node := doc.Nodes[0]
-	if node.Name != "flags" {
-		t.Errorf("expected node name 'flags', got %q", node.Name)
-	}
-
-	if len(node.Arguments) != 3 {
-		t.Fatalf("expected 3 arguments, got %d", len(node.Arguments))
-	}
+	assert.Equal(t, "flags", node.Name)
+	require.Len(t, node.Arguments, 3)
 
 	// Check first argument: #true
-	arg0 := node.Arguments[0]
-	if arg0.Type != ValueTypeBoolean {
-		t.Errorf("expected argument[0] type 'boolean', got %q", arg0.Type)
-	}
-	if arg0.Value != "true" {
-		t.Errorf("expected argument[0] value 'true', got %q", arg0.Value)
-	}
+	assert.Equal(t, ValueTypeBoolean, node.Arguments[0].Type)
+	assert.Equal(t, "true", node.Arguments[0].Value)
 
 	// Check second argument: #false
-	arg1 := node.Arguments[1]
-	if arg1.Type != ValueTypeBoolean {
-		t.Errorf("expected argument[1] type 'boolean', got %q", arg1.Type)
-	}
-	if arg1.Value != "false" {
-		t.Errorf("expected argument[1] value 'false', got %q", arg1.Value)
-	}
+	assert.Equal(t, ValueTypeBoolean, node.Arguments[1].Type)
+	assert.Equal(t, "false", node.Arguments[1].Value)
 
 	// Check third argument: #null
-	arg2 := node.Arguments[2]
-	if arg2.Type != ValueTypeNull {
-		t.Errorf("expected argument[2] type 'null', got %q", arg2.Type)
-	}
+	assert.Equal(t, ValueTypeNull, node.Arguments[2].Type)
 }
 
 func TestNodeWithHexNumbers(t *testing.T) {
@@ -381,31 +230,16 @@ func TestNodeWithHexNumbers(t *testing.T) {
 	//   - Node.Arguments[0].Value = "0xdeadbeef" (or converted to decimal)
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
+	require.NoError(t, err)
+	require.Len(t, doc.Nodes, 1)
 
 	node := doc.Nodes[0]
-	if node.Name != "color" {
-		t.Errorf("expected node name 'color', got %q", node.Name)
-	}
-
-	if len(node.Arguments) != 1 {
-		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
-	}
+	assert.Equal(t, "color", node.Name)
+	require.Len(t, node.Arguments, 1)
 
 	arg := node.Arguments[0]
-	if arg.Type != ValueTypeNumber {
-		t.Errorf("expected argument type 'number', got %q", arg.Type)
-	}
-
-	if arg.Value != "0xdeadbeef" {
-		t.Errorf("expected argument value '0xdeadbeef', got %q", arg.Value)
-	}
+	assert.Equal(t, ValueTypeNumber, arg.Type)
+	assert.Equal(t, "0xdeadbeef", arg.Value)
 }
 
 // ============================================================
@@ -422,58 +256,28 @@ func TestNodeWithProperties(t *testing.T) {
 	//   - Node.Properties[1].Key = "active", Value.Type = "boolean", Value.Value = "true"
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
+	require.NoError(t, err)
+	require.Len(t, doc.Nodes, 1)
 
 	node := doc.Nodes[0]
-	if node.Name != "author" {
-		t.Errorf("expected node name 'author', got %q", node.Name)
-	}
-
-	if len(node.Arguments) != 1 {
-		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
-	}
+	assert.Equal(t, "author", node.Name)
+	require.Len(t, node.Arguments, 1)
 
 	arg := node.Arguments[0]
-	if arg.Type != ValueTypeString {
-		t.Errorf("expected argument type 'string', got %q", arg.Type)
-	}
-	if arg.Value != "Alex Monad" {
-		t.Errorf("expected argument value 'Alex Monad', got %q", arg.Value)
-	}
+	assert.Equal(t, ValueTypeString, arg.Type)
+	assert.Equal(t, "Alex Monad", arg.Value)
 
-	if len(node.Properties) != 2 {
-		t.Fatalf("expected 2 properties, got %d", len(node.Properties))
-	}
+	require.Len(t, node.Properties, 2)
 
 	// Check first property: email=alex@example.com
-	prop0 := node.Properties[0]
-	if prop0.Key != "email" {
-		t.Errorf("expected property[0] key 'email', got %q", prop0.Key)
-	}
-	if prop0.Value.Type != ValueTypeString {
-		t.Errorf("expected property[0] value type 'string', got %q", prop0.Value.Type)
-	}
-	if prop0.Value.Value != "alex@example.com" {
-		t.Errorf("expected property[0] value 'alex@example.com', got %q", prop0.Value.Value)
-	}
+	assert.Equal(t, "email", node.Properties[0].Key)
+	assert.Equal(t, ValueTypeString, node.Properties[0].Value.Type)
+	assert.Equal(t, "alex@example.com", node.Properties[0].Value.Value)
 
 	// Check second property: active=#true
-	prop1 := node.Properties[1]
-	if prop1.Key != "active" {
-		t.Errorf("expected property[1] key 'active', got %q", prop1.Key)
-	}
-	if prop1.Value.Type != ValueTypeBoolean {
-		t.Errorf("expected property[1] value type 'boolean', got %q", prop1.Value.Type)
-	}
-	if prop1.Value.Value != "true" {
-		t.Errorf("expected property[1] value 'true', got %q", prop1.Value.Value)
-	}
+	assert.Equal(t, "active", node.Properties[1].Key)
+	assert.Equal(t, ValueTypeBoolean, node.Properties[1].Value.Type)
+	assert.Equal(t, "true", node.Properties[1].Value.Value)
 }
 
 func TestTypeAnnotations(t *testing.T) {
@@ -543,33 +347,17 @@ func TestQuotedMultilineString(t *testing.T) {
 	//   - Node.Arguments[0].Value = "\nhello\nworld\n" (dedented based on closing quotes)
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
+	require.NoError(t, err)
+	require.Len(t, doc.Nodes, 1)
 
 	node := doc.Nodes[0]
-	if node.Name != "message" {
-		t.Errorf("expected node name 'message', got %q", node.Name)
-	}
-
-	if len(node.Arguments) != 1 {
-		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
-	}
+	assert.Equal(t, "message", node.Name)
+	require.Len(t, node.Arguments, 1)
 
 	arg := node.Arguments[0]
-	if arg.Type != ValueTypeString {
-		t.Errorf("expected argument type 'string', got %q", arg.Type)
-	}
-
+	assert.Equal(t, ValueTypeString, arg.Type)
 	// The common indentation (2 spaces) should be stripped based on the closing quotes' indentation
-	expected := "\nhello\nworld\n"
-	if arg.Value != expected {
-		t.Errorf("expected argument value %q, got %q", expected, arg.Value)
-	}
+	assert.Equal(t, "\nhello\nworld\n", arg.Value)
 }
 
 func TestRawString(t *testing.T) {
@@ -581,33 +369,17 @@ func TestRawString(t *testing.T) {
 	//   - Node.Arguments[0].Value = "C:\path\to\file" (backslashes preserved literally, no escape processing)
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
+	require.NoError(t, err)
+	require.Len(t, doc.Nodes, 1)
 
 	node := doc.Nodes[0]
-	if node.Name != "path" {
-		t.Errorf("expected node name 'path', got %q", node.Name)
-	}
-
-	if len(node.Arguments) != 1 {
-		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
-	}
+	assert.Equal(t, "path", node.Name)
+	require.Len(t, node.Arguments, 1)
 
 	arg := node.Arguments[0]
-	if arg.Type != ValueTypeString {
-		t.Errorf("expected argument type 'string', got %q", arg.Type)
-	}
-
+	assert.Equal(t, ValueTypeString, arg.Type)
 	// Raw strings preserve backslashes literally without escape processing
-	expected := `C:\path\to\file`
-	if arg.Value != expected {
-		t.Errorf("expected argument value %q, got %q", expected, arg.Value)
-	}
+	assert.Equal(t, `C:\path\to\file`, arg.Value)
 }
 
 // ============================================================
@@ -621,60 +393,39 @@ func TestNodeWithChildren(t *testing.T) {
   }
 }`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "contents"
-	//   - Node.Children[0].Name = "section"
-	//   - Node.Children[0].Arguments[0].Value = "First section"
-	//   - Node.Children[0].Children[0].Name = "paragraph"
-	//   - Node.Children[0].Children[0].Arguments[0].Value = "Text"
-
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	assert.NoError(t, err)
+
+	expected := &Document{
+		Nodes: []Node{
+			{
+				Name:       "contents",
+				Arguments:  []Value{},
+				Properties: []Property{},
+				Children: []Node{
+					{
+						Name: "section",
+						Arguments: []Value{
+							{Type: ValueTypeString, Value: "First section"},
+						},
+						Properties: []Property{},
+						Children: []Node{
+							{
+								Name: "paragraph",
+								Arguments: []Value{
+									{Type: ValueTypeString, Value: "Text"},
+								},
+								Properties: []Property{},
+								Children:   []Node{},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
-	}
-
-	node := doc.Nodes[0]
-	if node.Name != "contents" {
-		t.Errorf("expected node name 'contents', got %q", node.Name)
-	}
-
-	if len(node.Children) != 1 {
-		t.Fatalf("expected 1 child, got %d", len(node.Children))
-	}
-
-	section := node.Children[0]
-	if section.Name != "section" {
-		t.Errorf("expected child node name 'section', got %q", section.Name)
-	}
-
-	if len(section.Arguments) != 1 {
-		t.Fatalf("expected 1 argument on section, got %d", len(section.Arguments))
-	}
-
-	if section.Arguments[0].Value != "First section" {
-		t.Errorf("expected section argument value 'First section', got %q", section.Arguments[0].Value)
-	}
-
-	if len(section.Children) != 1 {
-		t.Fatalf("expected 1 child on section, got %d", len(section.Children))
-	}
-
-	paragraph := section.Children[0]
-	if paragraph.Name != "paragraph" {
-		t.Errorf("expected child node name 'paragraph', got %q", paragraph.Name)
-	}
-
-	if len(paragraph.Arguments) != 1 {
-		t.Fatalf("expected 1 argument on paragraph, got %d", len(paragraph.Arguments))
-	}
-
-	if paragraph.Arguments[0].Value != "Text" {
-		t.Errorf("expected paragraph argument value 'Text', got %q", paragraph.Arguments[0].Value)
-	}
+	assert.Equal(t, expected, doc)
 }
 
 func TestMixedConstructs(t *testing.T) {
@@ -684,69 +435,242 @@ func TestMixedConstructs(t *testing.T) {
   debug #true
 }`
 
-	// Expected: Document with 1 Node
-	//   - Node.Name = "server"
-	//   - Node.Children[0].Name = "host", Arguments[0].Value = "localhost"
-	//   - Node.Children[1].Name = "port", Arguments[0].Value = "8080"
-	//   - Node.Children[2].Name = "debug", Arguments[0].Type = "boolean", Value = "true"
-	// Note: Ignoring comment line for now as per instructions
+	doc, err := New().Parse(input)
+	assert.NoError(t, err)
+
+	expected := &Document{
+		Nodes: []Node{
+			{
+				Name:       "server",
+				Arguments:  []Value{},
+				Properties: []Property{},
+				Children: []Node{
+					{
+						Name: "host",
+						Arguments: []Value{
+							{Type: ValueTypeString, Value: "localhost"},
+						},
+						Properties: []Property{},
+						Children:   []Node{},
+					},
+					{
+						Name: "port",
+						Arguments: []Value{
+							{Type: ValueTypeNumber, Value: "8080"},
+						},
+						Properties: []Property{},
+						Children:   []Node{},
+					},
+					{
+						Name: "debug",
+						Arguments: []Value{
+							{Type: ValueTypeBoolean, Value: "true"},
+						},
+						Properties: []Property{},
+						Children:   []Node{},
+					},
+				},
+			},
+		},
+	}
+
+	assert.Equal(t, expected, doc)
+}
+
+// ============================================================
+// Level 7: Additional Coverage
+// ============================================================
+
+func TestMultipleTopLevelNodes(t *testing.T) {
+	input := `node1
+node2
+node3`
 
 	doc, err := New().Parse(input)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	assert.NoError(t, err)
+
+	expected := &Document{
+		Nodes: []Node{
+			{Name: "node1", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			{Name: "node2", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			{Name: "node3", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+		},
 	}
 
-	if len(doc.Nodes) != 1 {
-		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	assert.Equal(t, expected, doc)
+}
+
+func TestNodeWithOnlyProperties(t *testing.T) {
+	input := `config debug=#true port=8080`
+
+	doc, err := New().Parse(input)
+	assert.NoError(t, err)
+
+	expected := &Document{
+		Nodes: []Node{
+			{
+				Name:      "config",
+				Arguments: []Value{},
+				Properties: []Property{
+					{Key: "debug", Value: Value{Type: ValueTypeBoolean, Value: "true"}},
+					{Key: "port", Value: Value{Type: ValueTypeNumber, Value: "8080"}},
+				},
+				Children: []Node{},
+			},
+		},
 	}
 
-	node := doc.Nodes[0]
-	if node.Name != "server" {
-		t.Errorf("expected node name 'server', got %q", node.Name)
+	assert.Equal(t, expected, doc)
+}
+
+func TestNodeWithEmptyChildren(t *testing.T) {
+	input := `container {}`
+
+	doc, err := New().Parse(input)
+	assert.NoError(t, err)
+
+	expected := &Document{
+		Nodes: []Node{
+			{Name: "container", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+		},
 	}
 
-	if len(node.Children) != 3 {
-		t.Fatalf("expected 3 children, got %d", len(node.Children))
+	assert.Equal(t, expected, doc)
+}
+
+func TestNumbersWithUnderscores(t *testing.T) {
+	input := `value 1_000_000`
+
+	// Expected: Document with 1 Node
+	//   - Node.Name = "value"
+	//   - Node.Arguments[0].Type = "number"
+	//   - Node.Arguments[0].Value = "1000000" or "1_000_000" (implementation choice)
+
+	_ = input
+	t.Skip("Parser not yet implemented")
+}
+
+func TestBinaryAndOctalNumbers(t *testing.T) {
+	input := `bits 0b1010 0o755`
+
+	// Expected: Document with 1 Node
+	//   - Node.Name = "bits"
+	//   - Node.Arguments[0].Type = "number", Value = "0b1010" or "10"
+	//   - Node.Arguments[1].Type = "number", Value = "0o755" or "493"
+
+	_ = input
+	t.Skip("Parser not yet implemented")
+}
+
+func TestFloatingPointNumbers(t *testing.T) {
+	input := `coords 3.14 -2.5 1.0e10`
+
+	// Expected: Document with 1 Node
+	//   - Node.Name = "coords"
+	//   - Node.Arguments[0].Type = "number", Value = "3.14"
+	//   - Node.Arguments[1].Type = "number", Value = "-2.5"
+	//   - Node.Arguments[2].Type = "number", Value = "1.0e10"
+
+	_ = input
+	t.Skip("Parser not yet implemented")
+}
+
+func TestMixedArgumentsAndProperties(t *testing.T) {
+	input := `person "John" age=30 "Doe" city="NYC"`
+
+	// Expected: Document with 1 Node
+	//   - Node.Name = "person"
+	//   - Node.Arguments[0].Type = "string", Value = "John"
+	//   - Node.Arguments[1].Type = "string", Value = "Doe"
+	//   - Node.Properties[0].Key = "age", Value.Type = "number", Value.Value = "30"
+	//   - Node.Properties[1].Key = "city", Value.Type = "string", Value.Value = "NYC"
+
+	_ = input
+	t.Skip("Parser not yet implemented")
+}
+
+func TestVariousWhitespace(t *testing.T) {
+	input := "node1\n\nnode2\n  \nnode3"
+
+	doc, err := New().Parse(input)
+	assert.NoError(t, err)
+
+	expected := &Document{
+		Nodes: []Node{
+			{Name: "node1", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			{Name: "node2", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			{Name: "node3", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+		},
 	}
 
-	// Check first child: host "localhost"
-	host := node.Children[0]
-	if host.Name != "host" {
-		t.Errorf("expected child[0] name 'host', got %q", host.Name)
-	}
-	if len(host.Arguments) != 1 {
-		t.Fatalf("expected 1 argument on host, got %d", len(host.Arguments))
-	}
-	if host.Arguments[0].Value != "localhost" {
-		t.Errorf("expected host argument value 'localhost', got %q", host.Arguments[0].Value)
+	assert.Equal(t, expected, doc)
+}
+
+func TestQuotedNodeNameOnly(t *testing.T) {
+	input := `"node-with-dashes"`
+
+	doc, err := New().Parse(input)
+	assert.NoError(t, err)
+
+	expected := &Document{
+		Nodes: []Node{
+			{Name: "node-with-dashes", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+		},
 	}
 
-	// Check second child: port 8080
-	port := node.Children[1]
-	if port.Name != "port" {
-		t.Errorf("expected child[1] name 'port', got %q", port.Name)
-	}
-	if len(port.Arguments) != 1 {
-		t.Fatalf("expected 1 argument on port, got %d", len(port.Arguments))
-	}
-	if port.Arguments[0].Value != "8080" {
-		t.Errorf("expected port argument value '8080', got %q", port.Arguments[0].Value)
+	assert.Equal(t, expected, doc)
+}
+
+func TestSiblingsAfterNesting(t *testing.T) {
+	input := `first {}
+second`
+
+	doc, err := New().Parse(input)
+	assert.NoError(t, err)
+
+	expected := &Document{
+		Nodes: []Node{
+			{Name: "first", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			{Name: "second", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+		},
 	}
 
-	// Check third child: debug #true
-	debug := node.Children[2]
-	if debug.Name != "debug" {
-		t.Errorf("expected child[2] name 'debug', got %q", debug.Name)
-	}
-	if len(debug.Arguments) != 1 {
-		t.Fatalf("expected 1 argument on debug, got %d", len(debug.Arguments))
-	}
-	if debug.Arguments[0].Type != ValueTypeBoolean {
-		t.Errorf("expected debug argument type 'boolean', got %q", debug.Arguments[0].Type)
-	}
-	if debug.Arguments[0].Value != "true" {
-		t.Errorf("expected debug argument value 'true', got %q", debug.Arguments[0].Value)
-	}
+	assert.Equal(t, expected, doc)
+}
+
+func TestSemicolonSeparatedNodes(t *testing.T) {
+	input := `node1; node2`
+
+	// Expected: Document with 2 Nodes
+	//   - Node[0].Name = "node1"
+	//   - Node[1].Name = "node2"
+
+	_ = input
+	t.Skip("Parser not yet implemented")
+}
+
+func TestSemicolonSeparatedNodesWithChildrenInline(t *testing.T) {
+	input := `node1; node2 { node3 }`
+
+	// Expected: Document with 2 Nodes
+	//   - Node[0].Name = "node1"
+	//   - Node[1].Name = "node2", Children[0].Name = "node3"
+
+	_ = input
+	t.Skip("Parser not yet implemented")
+}
+
+func TestSemicolonSeparatedNodesWithChildrenMultiline(t *testing.T) {
+	input := `node1; node2 {
+  node3
+}`
+
+	// Expected: Document with 2 Nodes
+	//   - Node[0].Name = "node1"
+	//   - Node[1].Name = "node2", Children[0].Name = "node3"
+
+	_ = input
+	t.Skip("Parser not yet implemented")
 }
 
 // ============================================================

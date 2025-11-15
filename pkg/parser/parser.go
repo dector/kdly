@@ -705,6 +705,13 @@ func (p *Parser) parseChildren() ([]Node, error) {
 						Value: keyword,
 					})
 				}
+			} else if p.looksLikeNumber() {
+				// Numeric literal - check this BEFORE isIdentifierStart
+				numValue := p.parseNumber()
+				childNode.Arguments = append(childNode.Arguments, Value{
+					Type:  ValueTypeNumber,
+					Value: numValue,
+				})
 			} else if isIdentifierStart(ch) {
 				// Could be a bare identifier argument or property key
 				savedPos := p.pos
@@ -745,13 +752,6 @@ func (p *Parser) parseChildren() ([]Node, error) {
 						Value: strValue,
 					})
 				}
-			} else if p.looksLikeNumber() {
-				// Numeric literal
-				numValue := p.parseNumber()
-				childNode.Arguments = append(childNode.Arguments, Value{
-					Type:  ValueTypeNumber,
-					Value: numValue,
-				})
 			} else {
 				// Unknown character - might be end of node
 				break
