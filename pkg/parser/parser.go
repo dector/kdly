@@ -99,6 +99,7 @@ type Parser struct {
 	state                    parserState
 	currentPropKey           string // temporary storage for property key when parsing property value
 	allowDuplicateProperties bool   // if true, keeps all duplicate properties; if false (default), rightmost wins per KDL v2 spec
+	disableTypeAnnotations   bool   // if true, type annotations are not allowed and will cause parse errors
 }
 
 // New creates a new Parser instance
@@ -112,6 +113,15 @@ func New() *Parser {
 // When set to false (default), duplicate property keys will follow KDL v2 spec: rightmost value overrides.
 func (p *Parser) WithAllowDuplicateProperties(allow bool) *Parser {
 	p.allowDuplicateProperties = allow
+	return p
+}
+
+// WithDisableTypeAnnotations configures the parser to reject type annotations.
+// When set to true, any type annotation (e.g., (type)node or (type)value) will cause a parse error.
+// When set to false (default), type annotations are allowed per KDL v2 spec.
+// This is useful for enforcing explicit types in configuration files.
+func (p *Parser) WithDisableTypeAnnotations(disable bool) *Parser {
+	p.disableTypeAnnotations = disable
 	return p
 }
 
@@ -1047,6 +1057,11 @@ func (p *Parser) parseValueWithOptionalTypeAnnotation() Value {
 
 	// Check for type annotation: (type)
 	if p.peek() == '(' {
+		// If type annotations are disabled, error out
+		if p.disableTypeAnnotations {
+			p.panicAt("type annotations are disabled")
+		}
+
 		p.advance() // skip '('
 
 		// Parse the type annotation (identifier)
@@ -1141,10 +1156,15 @@ func (p *Parser) parseChildren() ([]Node, error) {
 		// Check for optional type annotation before node name
 		var nodeTypeAnnotation string
 		if p.peek() == '(' {
+			// If type annotations are disabled, error out
+			if p.disableTypeAnnotations {
+				return nil, fmt.Errorf("parse error at line %d, col %d: type annotations are disabled", p.line, p.col)
+			}
+
 			p.advance() // skip '('
 			nodeTypeAnnotation = p.parseIdentifier()
 			if p.isEOF() || p.peek() != ')' {
-				return nil, fmt.Errorf("unterminated type annotation: expected ')' at line %d, col %d", p.line, p.col)
+				return nil, fmt.Errorf("parse error at line %d, col %d: unterminated type annotation: expected ')'", p.line, p.col)
 			}
 			p.advance() // skip ')'
 			p.skipInlineWhitespaceAndComments()
@@ -1343,6 +1363,11 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 				// Check for optional type annotation before node name
 				var nodeTypeAnnotation string
 				if p.peek() == '(' {
+					// If type annotations are disabled, error out
+					if p.disableTypeAnnotations {
+						p.panicAt("type annotations are disabled")
+					}
+
 					p.advance() // skip '('
 					nodeTypeAnnotation = p.parseIdentifier()
 					if p.isEOF() || p.peek() != ')' {
