@@ -380,8 +380,32 @@ func TestNodeWithHexNumbers(t *testing.T) {
 	//   - Node.Arguments[0].Type = "number"
 	//   - Node.Arguments[0].Value = "0xdeadbeef" (or converted to decimal)
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	}
+
+	node := doc.Nodes[0]
+	if node.Name != "color" {
+		t.Errorf("expected node name 'color', got %q", node.Name)
+	}
+
+	if len(node.Arguments) != 1 {
+		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
+	}
+
+	arg := node.Arguments[0]
+	if arg.Type != ValueTypeNumber {
+		t.Errorf("expected argument type 'number', got %q", arg.Type)
+	}
+
+	if arg.Value != "0xdeadbeef" {
+		t.Errorf("expected argument value '0xdeadbeef', got %q", arg.Value)
+	}
 }
 
 // ============================================================
@@ -397,8 +421,59 @@ func TestNodeWithProperties(t *testing.T) {
 	//   - Node.Properties[0].Key = "email", Value.Type = "string", Value.Value = "alex@example.com"
 	//   - Node.Properties[1].Key = "active", Value.Type = "boolean", Value.Value = "true"
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	}
+
+	node := doc.Nodes[0]
+	if node.Name != "author" {
+		t.Errorf("expected node name 'author', got %q", node.Name)
+	}
+
+	if len(node.Arguments) != 1 {
+		t.Fatalf("expected 1 argument, got %d", len(node.Arguments))
+	}
+
+	arg := node.Arguments[0]
+	if arg.Type != ValueTypeString {
+		t.Errorf("expected argument type 'string', got %q", arg.Type)
+	}
+	if arg.Value != "Alex Monad" {
+		t.Errorf("expected argument value 'Alex Monad', got %q", arg.Value)
+	}
+
+	if len(node.Properties) != 2 {
+		t.Fatalf("expected 2 properties, got %d", len(node.Properties))
+	}
+
+	// Check first property: email=alex@example.com
+	prop0 := node.Properties[0]
+	if prop0.Key != "email" {
+		t.Errorf("expected property[0] key 'email', got %q", prop0.Key)
+	}
+	if prop0.Value.Type != ValueTypeString {
+		t.Errorf("expected property[0] value type 'string', got %q", prop0.Value.Type)
+	}
+	if prop0.Value.Value != "alex@example.com" {
+		t.Errorf("expected property[0] value 'alex@example.com', got %q", prop0.Value.Value)
+	}
+
+	// Check second property: active=#true
+	prop1 := node.Properties[1]
+	if prop1.Key != "active" {
+		t.Errorf("expected property[1] key 'active', got %q", prop1.Key)
+	}
+	if prop1.Value.Type != ValueTypeBoolean {
+		t.Errorf("expected property[1] value type 'boolean', got %q", prop1.Value.Type)
+	}
+	if prop1.Value.Value != "true" {
+		t.Errorf("expected property[1] value 'true', got %q", prop1.Value.Value)
+	}
 }
 
 func TestTypeAnnotations(t *testing.T) {

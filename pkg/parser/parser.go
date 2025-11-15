@@ -63,16 +63,18 @@ const (
 	stNodeNameQuoted
 	stNodeBody        // After node name, parsing arguments/properties/children
 	stArgumentValue   // Parsing an argument value
+	stPropertyValue   // Parsing a property value (after key=)
 	stDocumentEnd
 )
 
 // Parser represents a KDL v2 parser
 type Parser struct {
-	input []rune // UTF-8 input as runes
-	pos   int    // current position in input
-	line  int    // current line (1-based)
-	col   int    // current column (1-based)
-	state parserState
+	input           []rune // UTF-8 input as runes
+	pos             int    // current position in input
+	line            int    // current line (1-based)
+	col             int    // current column (1-based)
+	state           parserState
+	currentPropKey  string // temporary storage for property key when parsing property value
 }
 
 // New creates a new Parser instance
@@ -564,8 +566,27 @@ func (p *Parser) Parse(input string) (*Document, error) {
 						p.state = stArgumentValue
 					}
 				} else if isIdentifierStart(ch) {
-					// Could be a bare identifier argument
-					p.state = stArgumentValue
+					// Could be a bare identifier argument or property key
+					// Look ahead to see if there's an = sign after the identifier
+					savedPos := p.pos
+					savedLine := p.line
+					savedCol := p.col
+
+					identifier := p.parseIdentifier()
+					p.skipWhitespace()
+
+					if !p.isEOF() && p.peek() == '=' {
+						// This is a property: key=value
+						p.currentPropKey = identifier
+						p.advance() // skip '='
+						p.state = stPropertyValue
+					} else {
+						// This is a bare identifier argument - restore position and parse as argument
+						p.pos = savedPos
+						p.line = savedLine
+						p.col = savedCol
+						p.state = stArgumentValue
+					}
 				} else {
 					// End of node
 					if currentNode != nil {
@@ -627,6 +648,67 @@ func (p *Parser) Parse(input string) (*Document, error) {
 			}
 
 			// Transition back to node body to check for more arguments
+			p.state = stNodeBody
+
+		case stPropertyValue:
+			// Parse a property value (after key=)
+			p.skipWhitespace()
+			ch := p.peek()
+
+			var propValue Value
+
+			if ch == '"' {
+				// Quoted string
+				strValue := p.parseQuotedString()
+				propValue = Value{
+					Type:  ValueTypeString,
+					Value: strValue,
+				}
+			} else if ch == '#' && p.pos+1 < len(p.input) && p.input[p.pos+1] == '"' {
+				// Raw string
+				strValue := p.parseRawString()
+				propValue = Value{
+					Type:  ValueTypeString,
+					Value: strValue,
+				}
+			} else if ch == '#' {
+				// Keyword (#true, #false, #null)
+				keyword, valueType := p.parseKeyword()
+				propValue = Value{
+					Type:  valueType,
+					Value: keyword,
+				}
+			} else if p.looksLikeNumber() {
+				// Numeric literal
+				numValue := p.parseNumber()
+				propValue = Value{
+					Type:  ValueTypeNumber,
+					Value: numValue,
+				}
+			} else if isIdentifierStart(ch) {
+				// Bare identifier string
+				strValue := p.parseIdentifier()
+				propValue = Value{
+					Type:  ValueTypeString,
+					Value: strValue,
+				}
+			} else {
+				p.panicAt("unexpected character in property value")
+			}
+
+			// Add property to current node
+			if currentNode != nil {
+				prop := Property{
+					Key:   p.currentPropKey,
+					Value: propValue,
+				}
+				currentNode.Properties = append(currentNode.Properties, prop)
+			}
+
+			// Clear the temporary property key
+			p.currentPropKey = ""
+
+			// Transition back to node body to check for more arguments/properties
 			p.state = stNodeBody
 
 		default:
