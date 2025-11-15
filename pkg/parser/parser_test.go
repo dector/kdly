@@ -611,23 +611,38 @@ second`
 func TestSemicolonSeparatedNodes(t *testing.T) {
 	input := `node1; node2`
 
-	// Expected: Document with 2 Nodes
-	//   - Node[0].Name = "node1"
-	//   - Node[1].Name = "node2"
+	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{Name: "node1", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			{Name: "node2", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+		},
+	}
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestSemicolonSeparatedNodesWithChildrenInline(t *testing.T) {
 	input := `node1; node2 { node3 }`
 
-	// Expected: Document with 2 Nodes
-	//   - Node[0].Name = "node1"
-	//   - Node[1].Name = "node2", Children[0].Name = "node3"
+	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{Name: "node1", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			{
+				Name:       "node2",
+				Arguments:  []Value{},
+				Properties: []Property{},
+				Children: []Node{
+					{Name: "node3", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+				},
+			},
+		},
+	}
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func TestSemicolonSeparatedNodesWithChildrenMultiline(t *testing.T) {
@@ -635,12 +650,23 @@ func TestSemicolonSeparatedNodesWithChildrenMultiline(t *testing.T) {
   node3
 }`
 
-	// Expected: Document with 2 Nodes
-	//   - Node[0].Name = "node1"
-	//   - Node[1].Name = "node2", Children[0].Name = "node3"
+	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{Name: "node1", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+			{
+				Name:       "node2",
+				Arguments:  []Value{},
+				Properties: []Property{},
+				Children: []Node{
+					{Name: "node3", Arguments: []Value{}, Properties: []Property{}, Children: []Node{}},
+				},
+			},
+		},
+	}
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 // ============================================================
