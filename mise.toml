@@ -1,0 +1,3 @@
+[tasks.test]
+run = "go test ./..."
+description = "Run all tests"

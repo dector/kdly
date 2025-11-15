@@ -1,8 +1,0 @@
-version: "3"
-
-tasks:
-  test:
-    desc: Run tests
-    cmds:
-      - go test ./...
-    silent: true
