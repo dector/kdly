@@ -157,9 +157,163 @@ func isIdentifierContinue(r rune) bool {
 	return !isForbiddenInBareIdentifier(r)
 }
 
+// isDigit checks if a rune is a decimal digit (0-9)
+func isDigit(r rune) bool {
+	return r >= '0' && r <= '9'
+}
+
+// isHexDigit checks if a rune is a hexadecimal digit (0-9, a-f, A-F)
+func isHexDigit(r rune) bool {
+	return (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
+}
+
+// isBinaryDigit checks if a rune is a binary digit (0-1)
+func isBinaryDigit(r rune) bool {
+	return r == '0' || r == '1'
+}
+
+// isOctalDigit checks if a rune is an octal digit (0-7)
+func isOctalDigit(r rune) bool {
+	return r >= '0' && r <= '7'
+}
+
 // panicAt panics with a formatted error message including position
 func (p *Parser) panicAt(message string) {
 	panic(fmt.Sprintf("parse error at line %d, col %d: %s", p.line, p.col, message))
+}
+
+// looksLikeNumber checks if the current position starts a numeric literal
+// Returns true for: integers (123), floats (1.23), hex (0x1f), binary (0b101), octal (0o77)
+// Also handles signs (+123, -456) and scientific notation (1e10, 1.5e-3)
+func (p *Parser) looksLikeNumber() bool {
+	pos := p.pos
+	if pos >= len(p.input) {
+		return false
+	}
+
+	ch := p.input[pos]
+
+	// Check for sign
+	if ch == '+' || ch == '-' {
+		pos++
+		if pos >= len(p.input) {
+			return false
+		}
+		ch = p.input[pos]
+	}
+
+	// Check for hex (0x), binary (0b), or octal (0o) prefix
+	if ch == '0' && pos+1 < len(p.input) {
+		next := p.input[pos+1]
+		if next == 'x' || next == 'X' || next == 'b' || next == 'B' || next == 'o' || next == 'O' {
+			return true
+		}
+	}
+
+	// Must start with a digit
+	return isDigit(ch)
+}
+
+// parseNumber parses a numeric literal from the current position
+// Returns the raw numeric string
+func (p *Parser) parseNumber() string {
+	start := p.pos
+
+	// Handle optional sign
+	if p.peek() == '+' || p.peek() == '-' {
+		p.advance()
+	}
+
+	// Check for special bases
+	if p.peek() == '0' && p.pos+1 < len(p.input) {
+		next := p.input[p.pos+1]
+
+		// Hexadecimal: 0x or 0X
+		if next == 'x' || next == 'X' {
+			p.advance() // skip '0'
+			p.advance() // skip 'x'
+			for !p.isEOF() && (isHexDigit(p.peek()) || p.peek() == '_') {
+				p.advance()
+			}
+			return string(p.input[start:p.pos])
+		}
+
+		// Binary: 0b or 0B
+		if next == 'b' || next == 'B' {
+			p.advance() // skip '0'
+			p.advance() // skip 'b'
+			for !p.isEOF() && (isBinaryDigit(p.peek()) || p.peek() == '_') {
+				p.advance()
+			}
+			return string(p.input[start:p.pos])
+		}
+
+		// Octal: 0o or 0O
+		if next == 'o' || next == 'O' {
+			p.advance() // skip '0'
+			p.advance() // skip 'o'
+			for !p.isEOF() && (isOctalDigit(p.peek()) || p.peek() == '_') {
+				p.advance()
+			}
+			return string(p.input[start:p.pos])
+		}
+	}
+
+	// Parse integer part (decimal)
+	for !p.isEOF() && (isDigit(p.peek()) || p.peek() == '_') {
+		p.advance()
+	}
+
+	// Check for decimal point (float)
+	if !p.isEOF() && p.peek() == '.' {
+		// Make sure it's not a trailing dot (like "123.")
+		if p.pos+1 < len(p.input) && isDigit(p.input[p.pos+1]) {
+			p.advance() // skip '.'
+			for !p.isEOF() && (isDigit(p.peek()) || p.peek() == '_') {
+				p.advance()
+			}
+		}
+	}
+
+	// Check for exponent (scientific notation)
+	if !p.isEOF() && (p.peek() == 'e' || p.peek() == 'E') {
+		p.advance() // skip 'e'
+
+		// Handle optional sign in exponent
+		if !p.isEOF() && (p.peek() == '+' || p.peek() == '-') {
+			p.advance()
+		}
+
+		// Parse exponent digits
+		for !p.isEOF() && (isDigit(p.peek()) || p.peek() == '_') {
+			p.advance()
+		}
+	}
+
+	return string(p.input[start:p.pos])
+}
+
+// parseKeyword parses a hash-prefixed keyword (#true, #false, #null)
+// Returns the keyword without the # prefix and the value type
+func (p *Parser) parseKeyword() (string, ValueType) {
+	if p.peek() != '#' {
+		p.panicAt("expected # for keyword")
+	}
+	p.advance() // Skip #
+
+	// Parse the keyword identifier
+	keyword := p.parseIdentifier()
+
+	// Determine the type based on the keyword
+	switch keyword {
+	case "true", "false":
+		return keyword, ValueTypeBoolean
+	case "null":
+		return keyword, ValueTypeNull
+	default:
+		p.panicAt(fmt.Sprintf("unknown keyword: #%s", keyword))
+		return "", ValueTypeString // unreachable
+	}
 }
 
 // parseIdentifier parses an identifier from the current position
@@ -406,12 +560,8 @@ func (p *Parser) Parse(input string) (*Document, error) {
 						// Raw string
 						p.state = stArgumentValue
 					} else {
-						// For now, treat as end of node (could be keyword like #true later)
-						if currentNode != nil {
-							doc.Nodes = append(doc.Nodes, *currentNode)
-							currentNode = nil
-						}
-						p.state = stDocumentEnd
+						// Keyword (#true, #false, #null)
+						p.state = stArgumentValue
 					}
 				} else if isIdentifierStart(ch) {
 					// Could be a bare identifier argument
@@ -446,8 +596,22 @@ func (p *Parser) Parse(input string) (*Document, error) {
 					Type:  ValueTypeString,
 					Value: strValue,
 				}
+			} else if ch == '#' {
+				// Keyword (#true, #false, #null)
+				keyword, valueType := p.parseKeyword()
+				argValue = Value{
+					Type:  valueType,
+					Value: keyword,
+				}
+			} else if p.looksLikeNumber() {
+				// Numeric literal
+				numValue := p.parseNumber()
+				argValue = Value{
+					Type:  ValueTypeNumber,
+					Value: numValue,
+				}
 			} else if isIdentifierStart(ch) {
-				// Bare identifier (treat as string for now)
+				// Bare identifier string
 				strValue := p.parseIdentifier()
 				argValue = Value{
 					Type:  ValueTypeString,

@@ -290,8 +290,34 @@ func TestNodeWithMultipleArguments(t *testing.T) {
 	//   - Node.Arguments has 4 elements, all Type="number"
 	//   - Values: "12", "15", "188", "1234"
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	}
+
+	node := doc.Nodes[0]
+	if node.Name != "bookmarks" {
+		t.Errorf("expected node name 'bookmarks', got %q", node.Name)
+	}
+
+	if len(node.Arguments) != 4 {
+		t.Fatalf("expected 4 arguments, got %d", len(node.Arguments))
+	}
+
+	expectedValues := []string{"12", "15", "188", "1234"}
+	for i, expected := range expectedValues {
+		arg := node.Arguments[i]
+		if arg.Type != ValueTypeNumber {
+			t.Errorf("expected argument[%d] type 'number', got %q", i, arg.Type)
+		}
+		if arg.Value != expected {
+			t.Errorf("expected argument[%d] value %q, got %q", i, expected, arg.Value)
+		}
+	}
 }
 
 func TestNodeWithBooleanAndNull(t *testing.T) {
@@ -303,8 +329,47 @@ func TestNodeWithBooleanAndNull(t *testing.T) {
 	//   - Node.Arguments[1].Type = "boolean", Value = "false"
 	//   - Node.Arguments[2].Type = "null"
 
-	_ = input
-	t.Skip("Parser not yet implemented")
+	doc, err := New().Parse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(doc.Nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(doc.Nodes))
+	}
+
+	node := doc.Nodes[0]
+	if node.Name != "flags" {
+		t.Errorf("expected node name 'flags', got %q", node.Name)
+	}
+
+	if len(node.Arguments) != 3 {
+		t.Fatalf("expected 3 arguments, got %d", len(node.Arguments))
+	}
+
+	// Check first argument: #true
+	arg0 := node.Arguments[0]
+	if arg0.Type != ValueTypeBoolean {
+		t.Errorf("expected argument[0] type 'boolean', got %q", arg0.Type)
+	}
+	if arg0.Value != "true" {
+		t.Errorf("expected argument[0] value 'true', got %q", arg0.Value)
+	}
+
+	// Check second argument: #false
+	arg1 := node.Arguments[1]
+	if arg1.Type != ValueTypeBoolean {
+		t.Errorf("expected argument[1] type 'boolean', got %q", arg1.Type)
+	}
+	if arg1.Value != "false" {
+		t.Errorf("expected argument[1] value 'false', got %q", arg1.Value)
+	}
+
+	// Check third argument: #null
+	arg2 := node.Arguments[2]
+	if arg2.Type != ValueTypeNull {
+		t.Errorf("expected argument[2] type 'null', got %q", arg2.Type)
+	}
 }
 
 func TestNodeWithHexNumbers(t *testing.T) {
