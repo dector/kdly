@@ -10,10 +10,11 @@ type Document struct {
 
 // Node represents a KDL node with name, arguments, properties, and children
 type Node struct {
-	Name       string
-	Arguments  []Value
-	Properties []Property
-	Children   []Node
+	Name           string
+	TypeAnnotation string // Optional type annotation like "author", "contributor"
+	Arguments      []Value
+	Properties     []Property
+	Children       []Node
 }
 
 // Value represents any KDL value (argument or property value)
@@ -281,6 +282,16 @@ func (p *Parser) skipSlashdashNode() {
 
 	// Skip whitespace between /- and the node
 	p.skipInlineWhitespaceAndComments()
+
+	// Skip optional type annotation before node name
+	if p.peek() == '(' {
+		p.advance() // skip '('
+		p.parseIdentifier()
+		if !p.isEOF() && p.peek() == ')' {
+			p.advance() // skip ')'
+		}
+		p.skipInlineWhitespaceAndComments()
+	}
 
 	// Skip the node name (quoted or bare identifier)
 	if p.peek() == '"' {
@@ -1127,22 +1138,36 @@ func (p *Parser) parseChildren() ([]Node, error) {
 		// Parse a child node
 		var childNode Node
 
+		// Check for optional type annotation before node name
+		var nodeTypeAnnotation string
+		if p.peek() == '(' {
+			p.advance() // skip '('
+			nodeTypeAnnotation = p.parseIdentifier()
+			if p.isEOF() || p.peek() != ')' {
+				return nil, fmt.Errorf("unterminated type annotation: expected ')' at line %d, col %d", p.line, p.col)
+			}
+			p.advance() // skip ')'
+			p.skipInlineWhitespaceAndComments()
+		}
+
 		// Check if node name is quoted or bare
 		if p.peek() == '"' {
 			nodeName := p.parseQuotedString()
 			childNode = Node{
-				Name:       nodeName,
-				Arguments:  make([]Value, 0),
-				Properties: make([]Property, 0),
-				Children:   make([]Node, 0),
+				Name:           nodeName,
+				TypeAnnotation: nodeTypeAnnotation,
+				Arguments:      make([]Value, 0),
+				Properties:     make([]Property, 0),
+				Children:       make([]Node, 0),
 			}
 		} else if isIdentifierStart(p.peek()) {
 			nodeName := p.parseIdentifier()
 			childNode = Node{
-				Name:       nodeName,
-				Arguments:  make([]Value, 0),
-				Properties: make([]Property, 0),
-				Children:   make([]Node, 0),
+				Name:           nodeName,
+				TypeAnnotation: nodeTypeAnnotation,
+				Arguments:      make([]Value, 0),
+				Properties:     make([]Property, 0),
+				Children:       make([]Node, 0),
 			}
 		} else {
 			return nil, fmt.Errorf("expected node name in children block at line %d, col %d", p.line, p.col)
@@ -1315,6 +1340,18 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 				p.skipSlashdashNode()
 				// Stay in stDocumentStart to process the next node
 			} else {
+				// Check for optional type annotation before node name
+				var nodeTypeAnnotation string
+				if p.peek() == '(' {
+					p.advance() // skip '('
+					nodeTypeAnnotation = p.parseIdentifier()
+					if p.isEOF() || p.peek() != ')' {
+						p.panicAt("unterminated type annotation: expected ')'")
+					}
+					p.advance() // skip ')'
+					p.skipInlineWhitespaceAndComments()
+				}
+
 				// Transition to parsing node name based on next character
 				if p.peek() == '"' {
 					p.state = stNodeNameQuoted
@@ -1330,21 +1367,26 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 					}
 					p.state = stNodeName
 				}
+
+				// Store the type annotation temporarily - we'll apply it when creating the node
+				p.currentPropKey = nodeTypeAnnotation // Reuse this field temporarily
 			}
 
 		case stNodeName:
 			// Parse the node name (identifier)
 			nodeName := p.parseIdentifier()
 
-			// Create a node with the parsed name
+			// Create a node with the parsed name and type annotation (if any)
 			node := Node{
-				Name:       nodeName,
-				Arguments:  make([]Value, 0),
-				Properties: make([]Property, 0),
-				Children:   make([]Node, 0),
+				Name:           nodeName,
+				TypeAnnotation: p.currentPropKey, // Retrieve temporarily stored type annotation
+				Arguments:      make([]Value, 0),
+				Properties:     make([]Property, 0),
+				Children:       make([]Node, 0),
 			}
 
 			currentNode = &node
+			p.currentPropKey = "" // Clear the temporary storage
 
 			// Transition to parsing node body
 			p.state = stNodeBody
@@ -1353,15 +1395,17 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 			// Parse the node name (quoted string)
 			nodeName := p.parseQuotedString()
 
-			// Create a node with the parsed name
+			// Create a node with the parsed name and type annotation (if any)
 			node := Node{
-				Name:       nodeName,
-				Arguments:  make([]Value, 0),
-				Properties: make([]Property, 0),
-				Children:   make([]Node, 0),
+				Name:           nodeName,
+				TypeAnnotation: p.currentPropKey, // Retrieve temporarily stored type annotation
+				Arguments:      make([]Value, 0),
+				Properties:     make([]Property, 0),
+				Children:       make([]Node, 0),
 			}
 
 			currentNode = &node
+			p.currentPropKey = "" // Clear the temporary storage
 
 			// Transition to parsing node body
 			p.state = stNodeBody
