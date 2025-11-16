@@ -37,6 +37,11 @@ func NewParser() *Parser {
 	return &Parser{Parser: parser.New()}
 }
 
+// Parse parses the given input string and returns a Document.
+func Parse(input string) (*Document, error) {
+	return NewParser().Parse(input)
+}
+
 // WithAllowDuplicateProperties configures the parser to keep all duplicate properties
 // instead of following the KDL v2 spec behavior (rightmost wins).
 // When set to true, all properties with duplicate keys will be preserved in the Properties slice.
