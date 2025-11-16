@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+	// Parse config
 	doc, err := kdly.Parse(`
       server www.example.com {
         root * path=#"/www/example.com"#
@@ -31,12 +32,12 @@ func main() {
 	}
 
 	fmt.Printf("Loaded config:\n\n%s\n", kdly.ToKDL(doc))
+	fmt.Println("\n---")
 
+	// Introspect nodes
 	node := doc.NodeFirstByName("server")
 	if node == nil {
 		panic("Server node not found")
 	}
-	fmt.Printf("\nServer: %s\n", node)
-
-	fmt.Println()
+	fmt.Printf("\nServer: %s\n", node.Arguments[0].Value)
 }
