@@ -32,5 +32,11 @@ func main() {
 
 	fmt.Printf("Loaded config:\n\n%s\n", kdly.ToKDL(doc))
 
+	node := doc.NodeFirstByName("server")
+	if node == nil {
+		panic("Server node not found")
+	}
+	fmt.Printf("\nServer: %s\n", node)
+
 	fmt.Println()
 }

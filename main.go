@@ -6,7 +6,9 @@ import (
 )
 
 // Document represents the top-level KDL document
-type Document = parser.Document
+type Document struct {
+	*parser.Document
+}
 
 // Node represents a KDL node with name, arguments, properties, and children
 type Node = parser.Node
@@ -39,7 +41,11 @@ func NewParser() *Parser {
 
 // Parse parses the given input string and returns a Document.
 func Parse(input string) (*Document, error) {
-	return NewParser().Parse(input)
+	doc, err := parser.New().Parse(input)
+	if err != nil {
+		return nil, err
+	}
+	return &Document{Document: doc}, nil
 }
 
 // WithAllowDuplicateProperties configures the parser to keep all duplicate properties
@@ -60,8 +66,18 @@ func (p *Parser) WithNoTypeAnnotations() *Parser {
 	return p
 }
 
+// NodesByName returns all nodes with the given name from the document.
+func (d *Document) NodesByName(name string) []*Node {
+	return d.Document.NodesByName(name)
+}
+
+// NodeFirstByName returns the first node with the given name, or nil if not found.
+func (d *Document) NodeFirstByName(name string) *Node {
+	return d.Document.NodeFirstByName(name)
+}
+
 // ToKDL converts a parsed KDL Document back to its text representation.
 // This function serializes the document structure into valid KDL v2 format.
 func ToKDL(doc *Document) string {
-	return serializer.ToKDL(doc)
+	return serializer.ToKDL(doc.Document)
 }

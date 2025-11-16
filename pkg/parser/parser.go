@@ -1588,7 +1588,17 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 	return doc, nil
 }
 
-func (d *Document) NodeByName(name string) *Node {
+func (d *Document) NodesByName(name string) []*Node {
+	var nodes []*Node
+	for _, node := range d.Nodes {
+		if node.Name == name {
+			nodes = append(nodes, &node)
+		}
+	}
+	return nodes
+}
+
+func (d *Document) NodeFirstByName(name string) *Node {
 	for _, node := range d.Nodes {
 		if node.Name == name {
 			return &node
