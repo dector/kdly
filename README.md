@@ -1,12 +1,17 @@
 # KDLy
 
+<p align="center">
+  <img src="docs/kdly-logo.webp" alt="KDLy Logo" width="300">
+</p>
+
 A Go parser for [KDL v2](https://kdl.dev) (KDL Document Language).
 
-> [!WARNING] The parser is mostly implmented using guided vibe-coding approach. There might be bugs.
-
-> [!WARNING] Public API might change before 1.0 release.
-
-> [!WARNING] The parser might not yet fully compliant with the KDL v2 specification. This library is not tested in production.
+> [!WARNING]
+>
+> - The parser is mostly implemented using guided vibe-coding approach. There might be bugs.
+> - Public API might change before 1.0 release.
+> - The parser might not yet fully compliant with the KDL v2 specification. This library is not tested in production.
+>
 
 ## Installation
 
