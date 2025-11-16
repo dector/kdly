@@ -84,9 +84,9 @@ const (
 	stDocumentStart parserState = iota
 	stNodeName
 	stNodeNameQuoted
-	stNodeBody        // After node name, parsing arguments/properties/children
-	stArgumentValue   // Parsing an argument value
-	stPropertyValue   // Parsing a property value (after key=)
+	stNodeBody      // After node name, parsing arguments/properties/children
+	stArgumentValue // Parsing an argument value
+	stPropertyValue // Parsing a property value (after key=)
 	stDocumentEnd
 )
 
@@ -1586,4 +1586,13 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 	}
 
 	return doc, nil
+}
+
+func (d *Document) NodeByName(name string) *Node {
+	for _, node := range d.Nodes {
+		if node.Name == name {
+			return &node
+		}
+	}
+	return nil
 }
