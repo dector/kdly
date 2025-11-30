@@ -2,6 +2,8 @@ package parser
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_TODO_AllEscapes(t *testing.T) {
@@ -15,335 +17,635 @@ func Test_TODO_AllEscapes(t *testing.T) {
 	t.Skip("TODO")
 }
 
-func Test_TODO_AllNodeFields(t *testing.T) {
+func Test_AllNodeFields(t *testing.T) {
 	input := `node arg prop=val {
     inner_node
 }
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "arg"},
+				},
+				Properties: []Property{
+					{Key: "prop", Value: Value{Type: ValueTypeString, Value: "val"}},
+				},
+				Children: []Node{
+					{
+						Name:       "inner_node",
+						Arguments:  []Value{},
+						Properties: []Property{},
+						Children:   []Node{},
+					},
+				},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_ArgAndPropSameName(t *testing.T) {
+func Test_ArgAndPropSameName(t *testing.T) {
 	input := `node arg arg=val
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "arg"},
+				},
+				Properties: []Property{
+					{Key: "arg", Value: Value{Type: ValueTypeString, Value: "val"}},
+				},
+				Children: []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_ArgBare(t *testing.T) {
+func Test_ArgBare(t *testing.T) {
 	input := `node a
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "a"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_ArgFalseType(t *testing.T) {
+func Test_ArgFalseType(t *testing.T) {
 	input := `node (type)#false
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeBoolean, Value: "false", TypeAnnotation: "type"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_ArgFloatType(t *testing.T) {
+func Test_ArgFloatType(t *testing.T) {
 	input := `node (type)2.5`
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeNumber, Value: "2.5", TypeAnnotation: "type"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_ArgHexType(t *testing.T) {
+func Test_ArgHexType(t *testing.T) {
 	input := `node (type)0x10
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeNumber, Value: "0x10", TypeAnnotation: "type"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_ArgNullType(t *testing.T) {
+func Test_ArgNullType(t *testing.T) {
 	input := `node (type)#null
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeNull, Value: "null", TypeAnnotation: "type"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_ArgRawStringType(t *testing.T) {
+func Test_ArgRawStringType(t *testing.T) {
 	input := `node (type)#"str"#
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "str", TypeAnnotation: "type"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_ArgStringType(t *testing.T) {
+func Test_ArgStringType(t *testing.T) {
 	input := `node (type)"str"
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "str", TypeAnnotation: "type"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_ArgTrueType(t *testing.T) {
+func Test_ArgTrueType(t *testing.T) {
 	input := `node (type)#true
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeBoolean, Value: "true", TypeAnnotation: "type"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_ArgType(t *testing.T) {
+func Test_ArgType(t *testing.T) {
 	input := `node (type)arg
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "arg", TypeAnnotation: "type"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_ArgZeroType(t *testing.T) {
+func Test_ArgZeroType(t *testing.T) {
 	input := `node (type)0
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeNumber, Value: "0", TypeAnnotation: "type"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_AsteriskInBlockComment(t *testing.T) {
+func Test_AsteriskInBlockComment(t *testing.T) {
 	input := `node /* * */`
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:       "node",
+				Arguments:  []Value{},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BareEmoji(t *testing.T) {
+func Test_BareEmoji(t *testing.T) {
 	input := `😁 happy!
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "😁",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "happy!"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BareIdentDot(t *testing.T) {
+func Test_BareIdentDot(t *testing.T) {
 	input := `node .`
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "."},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BareIdentNumericDotFail(t *testing.T) {
+func Test_BareIdentNumericDotFail(t *testing.T) {
 	input := `node .0n`
 
 	doc, err := New().Parse(input)
 
 	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.Error(t, err)
 }
 
-func Test_TODO_BareIdentNumericFail(t *testing.T) {
+func Test_BareIdentNumericFail(t *testing.T) {
 	input := `node 0n`
 
 	doc, err := New().Parse(input)
 
 	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.Error(t, err)
 }
 
-func Test_TODO_BareIdentNumericSignFail(t *testing.T) {
+func Test_BareIdentNumericSignFail(t *testing.T) {
 	input := `node +0n`
 
 	doc, err := New().Parse(input)
 
 	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.Error(t, err)
 }
 
-func Test_TODO_BareIdentSign(t *testing.T) {
+func Test_BareIdentSign(t *testing.T) {
 	input := `node +`
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "+"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BareIdentSignDot(t *testing.T) {
+func Test_BareIdentSignDot(t *testing.T) {
 	input := `node +.`
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "+."},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_Binary(t *testing.T) {
+func Test_Binary(t *testing.T) {
 	input := `node 0b10`
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeNumber, Value: "2"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BinaryTrailingUnderscore(t *testing.T) {
+func Test_BinaryTrailingUnderscore(t *testing.T) {
 	input := `node 0b10_`
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeNumber, Value: "2"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BinaryUnderscore(t *testing.T) {
+func Test_BinaryUnderscore(t *testing.T) {
 	input := `node 0b1_0
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeNumber, Value: "2"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BlankArgType(t *testing.T) {
+func Test_BlankArgType(t *testing.T) {
 	input := `node ("")10`
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeNumber, Value: "10", TypeAnnotation: ""},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BlankNodeType(t *testing.T) {
+func Test_BlankNodeType(t *testing.T) {
 	input := `("")node
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:           "node",
+				TypeAnnotation: "",
+				Arguments:      []Value{},
+				Properties:     []Property{},
+				Children:       []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BlankPropType(t *testing.T) {
+func Test_BlankPropType(t *testing.T) {
 	input := `node key=("")#true
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{},
+				Properties: []Property{
+					{Key: "key", Value: Value{Type: ValueTypeBoolean, Value: "true", TypeAnnotation: ""}},
+				},
+				Children: []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BlockComment(t *testing.T) {
+func Test_BlockComment(t *testing.T) {
 	input := `node /* comment */ arg
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "arg"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BlockCommentAfterNode(t *testing.T) {
+func Test_BlockCommentAfterNode(t *testing.T) {
 	input := `node /* hey */ arg
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "arg"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BlockCommentBeforeNode(t *testing.T) {
+func Test_BlockCommentBeforeNode(t *testing.T) {
 	input := `/* hey */ node`
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:       "node",
+				Arguments:  []Value{},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BlockCommentBeforeNodeNoSpace(t *testing.T) {
+func Test_BlockCommentBeforeNodeNoSpace(t *testing.T) {
 	input := `/* hey*/node
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:       "node",
+				Arguments:  []Value{},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BlockCommentNewline(t *testing.T) {
+func Test_BlockCommentNewline(t *testing.T) {
 	input := `/* hey */
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func Test_TODO_BomInitial(t *testing.T) {
@@ -366,161 +668,324 @@ func Test_TODO_BomLaterFail(t *testing.T) {
 	t.Skip("TODO")
 }
 
-func Test_TODO_BooleanArg(t *testing.T) {
+func Test_BooleanArg(t *testing.T) {
 	input := `node #false #true
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeBoolean, Value: "false"},
+					{Type: ValueTypeBoolean, Value: "true"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BooleanProp(t *testing.T) {
+func Test_BooleanProp(t *testing.T) {
 	input := `node prop1=#true prop2=#false
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:      "node",
+				Arguments: []Value{},
+				Properties: []Property{
+					{Key: "prop1", Value: Value{Type: ValueTypeBoolean, Value: "true"}},
+					{Key: "prop2", Value: Value{Type: ValueTypeBoolean, Value: "false"}},
+				},
+				Children: []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_BracesInBareId(t *testing.T) {
+func Test_BracesInBareId(t *testing.T) {
 	input := `foo123{bar}
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:       "foo123",
+				Arguments:  []Value{},
+				Properties: []Property{},
+				Children: []Node{
+					{
+						Name:       "bar",
+						Arguments:  []Value{},
+						Properties: []Property{},
+						Children:   []Node{},
+					},
+				},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_ChevronsInBareId(t *testing.T) {
+func Test_ChevronsInBareId(t *testing.T) {
 	input := `foo123<bar>foo weeee
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "foo123<bar>foo",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "weeee"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_CommaInBareId(t *testing.T) {
+func Test_CommaInBareId(t *testing.T) {
 	input := `foo123,bar weeee
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "foo123,bar",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "weeee"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_CommentAfterArgType(t *testing.T) {
+func Test_CommentAfterArgType(t *testing.T) {
 	input := `node (type)/*hey*/10
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeNumber, Value: "10", TypeAnnotation: "type"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_CommentAfterNodeType(t *testing.T) {
+func Test_CommentAfterNodeType(t *testing.T) {
 	input := `(type)/*hey*/node
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:           "node",
+				TypeAnnotation: "type",
+				Arguments:      []Value{},
+				Properties:     []Property{},
+				Children:       []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_CommentAfterPropType(t *testing.T) {
+func Test_CommentAfterPropType(t *testing.T) {
 	input := `node key=(type)/*hey*/10
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:      "node",
+				Arguments: []Value{},
+				Properties: []Property{
+					{Key: "key", Value: Value{Type: ValueTypeNumber, Value: "10", TypeAnnotation: "type"}},
+				},
+				Children: []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_CommentAndNewline(t *testing.T) {
+func Test_CommentAndNewline(t *testing.T) {
 	input := `node1 //
 node2
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:       "node1",
+				Arguments:  []Value{},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+			{
+				Name:       "node2",
+				Arguments:  []Value{},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_CommentInArgType(t *testing.T) {
+func Test_CommentInArgType(t *testing.T) {
 	input := `node (type/*hey*/)10
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeNumber, Value: "10", TypeAnnotation: "type"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_CommentInNodeType(t *testing.T) {
+func Test_CommentInNodeType(t *testing.T) {
 	input := `(type/*hey*/)node
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:           "node",
+				TypeAnnotation: "type",
+				Arguments:      []Value{},
+				Properties:     []Property{},
+				Children:       []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_CommentInPropType(t *testing.T) {
+func Test_CommentInPropType(t *testing.T) {
 	input := `node key=(type/*hey*/)10
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name:      "node",
+				Arguments: []Value{},
+				Properties: []Property{
+					{Key: "key", Value: Value{Type: ValueTypeNumber, Value: "10", TypeAnnotation: "type"}},
+				},
+				Children: []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_CommentedArg(t *testing.T) {
+func Test_CommentedArg(t *testing.T) {
 	input := `node /- arg1 arg2
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "arg2"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
-func Test_TODO_CommentedChild(t *testing.T) {
+func Test_CommentedChild(t *testing.T) {
 	input := `node arg /- {
      inner_node
 }
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "arg"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func Test_TODO_CommentedLine(t *testing.T) {
@@ -1144,7 +1609,7 @@ func Test_TODO_JustBlockComment(t *testing.T) {
 
 func Test_TODO_JustChild(t *testing.T) {
 	input := `node {
-    inner_node     
+    inner_node
 }`
 
 	doc, err := New().Parse(input)
@@ -1704,15 +2169,15 @@ func Test_TODO_MultilineStringWhitespaceOnly(t *testing.T) {
 node """
   	""" """
  	 \
-             
+     
  	 """ """
-                            
+       
  """\
     \ // The next two strings contains only whitespace
     """
-       
-       
-      \s 
+   
+
+      \s
     """ #"""
     
 
@@ -2047,7 +2512,8 @@ func Test_TODO_Octal(t *testing.T) {
 }
 
 func Test_TODO_OnlyCr(t *testing.T) {
-	input := ``
+	input := `
+`
 
 	doc, err := New().Parse(input)
 
@@ -3855,4 +4321,3 @@ func Test_TODO_ZeroSpaceBeforeSlashdashProp(t *testing.T) {
 	_ = err
 	t.Skip("TODO")
 }
-
