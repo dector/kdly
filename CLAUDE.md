@@ -15,4 +15,4 @@ The parser uses a manually written state machine for tokenization, providing fin
 - Language: Go
 - Tokenizer: Hand-written state machine
 - Target Specification: KDL v2
-- To run tests - use `task test`
+- To run tests - use `ror test`

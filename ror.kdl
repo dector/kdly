@@ -1,0 +1,5 @@
+task test {
+  description "Run tests"
+
+  cmd "go test ./..."
+}
