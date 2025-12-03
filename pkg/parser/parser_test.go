@@ -968,7 +968,7 @@ func TestQuotedMultilineString(t *testing.T) {
 			{
 				Name: "message",
 				Arguments: []Value{
-					{Type: ValueTypeString, Value: "\nhello\nworld\n"},
+					{Type: ValueTypeString, Value: "hello\nworld\n"},
 				},
 				Properties: []Property{},
 				Children:   []Node{},

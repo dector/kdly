@@ -2031,10 +2031,21 @@ how goes?
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "hey\neveryone\nhow goes?\n"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func Test_TODO_MultilineRawStringContainingQuotes(t *testing.T) {
@@ -2046,10 +2057,21 @@ func Test_TODO_MultilineRawStringContainingQuotes(t *testing.T) {
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "\"\"\"triple-quote\"\"\"\n##\"too few quotes\"##\n#\"\"\"too few #\"\"\"#\n"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func Test_TODO_MultilineRawStringEmpty(t *testing.T) {
@@ -2057,10 +2079,21 @@ func Test_TODO_MultilineRawStringEmpty(t *testing.T) {
 """#`
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: ""},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func Test_TODO_MultilineRawStringEmptyIndented(t *testing.T) {
@@ -2068,10 +2101,21 @@ func Test_TODO_MultilineRawStringEmptyIndented(t *testing.T) {
 	"""#`
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: ""},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func Test_TODO_MultilineRawStringIndented(t *testing.T) {
@@ -2083,10 +2127,21 @@ func Test_TODO_MultilineRawStringIndented(t *testing.T) {
 `
 
 	doc, err := New().Parse(input)
+	want := &Document{
+		Nodes: []Node{
+			{
+				Name: "node",
+				Arguments: []Value{
+					{Type: ValueTypeString, Value: "  hey\n everyone\n   how goes?\n"},
+				},
+				Properties: []Property{},
+				Children:   []Node{},
+			},
+		},
+	}
 
-	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.NoError(t, err)
+	assert.Equal(t, want, doc)
 }
 
 func Test_TODO_MultilineRawStringNonMatchingPrefixCharacterErrorFail(t *testing.T) {
@@ -2100,8 +2155,7 @@ func Test_TODO_MultilineRawStringNonMatchingPrefixCharacterErrorFail(t *testing.
 	doc, err := New().Parse(input)
 
 	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.Error(t, err)
 }
 
 func Test_TODO_MultilineRawStringNonMatchingPrefixCountErrorFail(t *testing.T) {
@@ -2115,8 +2169,7 @@ func Test_TODO_MultilineRawStringNonMatchingPrefixCountErrorFail(t *testing.T) {
 	doc, err := New().Parse(input)
 
 	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.Error(t, err)
 }
 
 func Test_TODO_MultilineRawStringSingleLineErrFail(t *testing.T) {
@@ -2125,8 +2178,7 @@ func Test_TODO_MultilineRawStringSingleLineErrFail(t *testing.T) {
 	doc, err := New().Parse(input)
 
 	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.Error(t, err)
 }
 
 func Test_TODO_MultilineRawStringSingleQuoteErrFail(t *testing.T) {
@@ -2140,8 +2192,7 @@ how goes?
 	doc, err := New().Parse(input)
 
 	_ = doc
-	_ = err
-	t.Skip("TODO")
+	assert.Error(t, err)
 }
 
 func Test_TODO_MultilineString(t *testing.T) {
