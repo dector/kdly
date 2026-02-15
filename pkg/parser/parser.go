@@ -311,7 +311,8 @@ func (p *Parser) skipSlashdashNode() {
 	// Skip optional type annotation before node name
 	if p.peek() == '(' {
 		p.advance() // skip '('
-		p.parseIdentifier()
+		p.parseTypeAnnotation()
+		p.skipInlineWhitespaceAndComments()
 		if !p.isEOF() && p.peek() == ')' {
 			p.advance() // skip ')'
 		}
@@ -431,9 +432,54 @@ func (p *Parser) skipWhitespaceAndComments() {
 	}
 }
 
+// skipInlineComments skips comments in inline contexts.
+// For line comments (//), it stops before the newline so callers can still
+// observe newline as a node terminator.
+func (p *Parser) skipInlineComments() bool {
+	if p.isEOF() || p.peek() != '/' || p.pos+1 >= len(p.input) {
+		return false
+	}
+
+	nextCh := p.input[p.pos+1]
+
+	if nextCh == '/' {
+		p.advance() // skip first /
+		p.advance() // skip second /
+		for !p.isEOF() && p.peek() != '\n' && p.peek() != '\r' {
+			p.advance()
+		}
+		return true
+	}
+
+	if nextCh == '*' {
+		p.advance() // skip /
+		p.advance() // skip *
+
+		depth := 1
+		for !p.isEOF() && depth > 0 {
+			if p.peek() == '/' && p.pos+1 < len(p.input) && p.input[p.pos+1] == '*' {
+				p.advance() // skip /
+				p.advance() // skip *
+				depth++
+			} else if p.peek() == '*' && p.pos+1 < len(p.input) && p.input[p.pos+1] == '/' {
+				p.advance() // skip *
+				p.advance() // skip /
+				depth--
+			} else {
+				p.advance()
+			}
+		}
+		return true
+	}
+
+	return false
+}
+
 // skipInlineWhitespaceAndComments skips spaces, tabs, and comments but NOT newlines
 // However, line continuation (backslash before newline) allows newlines to be treated as whitespace
 func (p *Parser) skipInlineWhitespaceAndComments() {
+	allowCommentNewline := false
+
 	for {
 		startPos := p.pos
 		// Skip spaces and tabs only (not newlines)
@@ -450,7 +496,8 @@ func (p *Parser) skipInlineWhitespaceAndComments() {
 					// Line continuation - skip backslash and newline
 					p.advance() // skip \
 					p.advance() // skip \n
-					continue    // Continue skipping whitespace after the continuation
+					allowCommentNewline = true
+					continue // Continue skipping whitespace after the continuation
 				} else if nextCh == '\r' {
 					// Handle \r\n or just \r
 					p.advance() // skip \
@@ -458,13 +505,29 @@ func (p *Parser) skipInlineWhitespaceAndComments() {
 					if !p.isEOF() && p.peek() == '\n' {
 						p.advance() // skip \n
 					}
+					allowCommentNewline = true
 					continue // Continue skipping whitespace after the continuation
 				}
 			}
 		}
 
 		// Try to skip comments
-		p.skipComments()
+		if p.skipInlineComments() {
+			if allowCommentNewline && !p.isEOF() {
+				if p.peek() == '\n' {
+					p.advance()
+					continue
+				}
+				if p.peek() == '\r' {
+					p.advance()
+					if !p.isEOF() && p.peek() == '\n' {
+						p.advance()
+					}
+					continue
+				}
+			}
+		}
+
 		// If position didn't change, we're done
 		if p.pos == startPos {
 			break
@@ -852,6 +915,20 @@ func (p *Parser) parseIdentifier() string {
 	}
 
 	return string(p.input[start:p.pos])
+}
+
+// parseTypeAnnotation parses a type annotation token inside (...).
+// Type annotations can be bare identifiers or quoted strings.
+func (p *Parser) parseTypeAnnotation() string {
+	if p.isEOF() {
+		p.panicAt("expected type annotation")
+	}
+
+	if p.peek() == '"' {
+		return p.parseQuotedString()
+	}
+
+	return p.parseIdentifier()
 }
 
 // parseQuotedString parses a quoted string from the current position
@@ -1331,14 +1408,16 @@ func (p *Parser) parseValueWithOptionalTypeAnnotation() Value {
 
 		p.advance() // skip '('
 
-		// Parse the type annotation (identifier)
-		typeAnnotation = p.parseIdentifier()
+		// Parse the type annotation token
+		typeAnnotation = p.parseTypeAnnotation()
+		p.skipInlineWhitespaceAndComments()
 
 		// Expect closing ')'
-		if p.peek() != ')' {
+		if p.isEOF() || p.peek() != ')' {
 			p.panicAt("expected ')' after type annotation")
 		}
 		p.advance() // skip ')'
+		p.skipInlineWhitespaceAndComments()
 	}
 
 	// Now parse the actual value
@@ -1440,7 +1519,8 @@ func (p *Parser) parseChildren() ([]Node, error) {
 			}
 
 			p.advance() // skip '('
-			nodeTypeAnnotation = p.parseIdentifier()
+			nodeTypeAnnotation = p.parseTypeAnnotation()
+			p.skipInlineWhitespaceAndComments()
 			if p.isEOF() || p.peek() != ')' {
 				return nil, fmt.Errorf("parse error at line %d, col %d: unterminated type annotation: expected ')'", p.line, p.col)
 			}
@@ -1657,7 +1737,8 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 					}
 
 					p.advance() // skip '('
-					nodeTypeAnnotation = p.parseIdentifier()
+					nodeTypeAnnotation = p.parseTypeAnnotation()
+					p.skipInlineWhitespaceAndComments()
 					if p.isEOF() || p.peek() != ')' {
 						p.panicAt("unterminated type annotation: expected ')'")
 					}
