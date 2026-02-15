@@ -476,7 +476,7 @@ func isForbiddenInBareIdentifier(r rune) bool {
 // isIdentifierStart checks if a rune can start an identifier
 // In KDL v2, bare identifiers can start with almost any character except:
 // - Whitespace and forbidden characters (checked by isForbiddenInBareIdentifier)
-// - Patterns that look like numbers (digit, +/- followed by digit, etc.)
+// - Digits (number parsing has precedence for numeric-looking tokens)
 func isIdentifierStart(r rune) bool {
 	// Reject forbidden characters
 	if isForbiddenInBareIdentifier(r) {
@@ -485,13 +485,6 @@ func isIdentifierStart(r rune) bool {
 
 	// Reject digits - numbers can start with digits
 	if isDigit(r) {
-		return false
-	}
-
-	// Reject decimal point - numbers like .5, +.5, -.5 start with '.'
-	// Note: This is conservative since '.' could be valid in some contexts,
-	// but according to KDL v2 spec, patterns like .5 are numeric literals
-	if r == '.' {
 		return false
 	}
 
@@ -579,6 +572,54 @@ func (p *Parser) looksLikeNumber() bool {
 	}
 
 	return false
+}
+
+// isSignedDotBareIdentifier checks for +. or -. tokens that are not followed
+// by a digit, which should be parsed as bare identifiers rather than numbers.
+func (p *Parser) isSignedDotBareIdentifier() bool {
+	if p.isEOF() {
+		return false
+	}
+
+	ch := p.peek()
+	if ch != '+' && ch != '-' {
+		return false
+	}
+
+	if p.pos+1 >= len(p.input) || p.input[p.pos+1] != '.' {
+		return false
+	}
+
+	if p.pos+2 < len(p.input) && isDigit(p.input[p.pos+2]) {
+		return false
+	}
+
+	return true
+}
+
+// isNumberBoundary checks whether a rune can legally follow a numeric literal.
+func isNumberBoundary(r rune) bool {
+	if isWhitespace(r) {
+		return true
+	}
+
+	switch r {
+	case ';', '{', '}', '/', '\\':
+		return true
+	}
+
+	return false
+}
+
+// validateNumberBoundary ensures a parsed numeric literal is properly delimited.
+func (p *Parser) validateNumberBoundary() {
+	if p.isEOF() {
+		return
+	}
+
+	if !isNumberBoundary(p.peek()) {
+		p.panicAt(fmt.Sprintf("invalid character '%c' after numeric literal", p.peek()))
+	}
 }
 
 // parseNumber parses a numeric literal from the current position
@@ -1259,9 +1300,18 @@ func (p *Parser) parseValueWithOptionalTypeAnnotation() Value {
 			Value:          keyword,
 			TypeAnnotation: typeAnnotation,
 		}
+	} else if p.isSignedDotBareIdentifier() {
+		// +. and -. without trailing digit are bare identifiers
+		strValue := p.parseIdentifier()
+		value = Value{
+			Type:           ValueTypeString,
+			Value:          strValue,
+			TypeAnnotation: typeAnnotation,
+		}
 	} else if p.looksLikeNumber() {
 		// Numeric literal
 		numValue := p.parseNumber()
+		p.validateNumberBoundary()
 		value = Value{
 			Type:           ValueTypeNumber,
 			Value:          numValue,
@@ -1456,9 +1506,17 @@ func (p *Parser) parseValue() Value {
 			Type:  valueType,
 			Value: keyword,
 		}
+	} else if p.isSignedDotBareIdentifier() {
+		// +. and -. without trailing digit are bare identifiers
+		strValue := p.parseIdentifier()
+		return Value{
+			Type:  ValueTypeString,
+			Value: strValue,
+		}
 	} else if p.looksLikeNumber() {
 		// Numeric literal
 		numValue := p.parseNumber()
+		p.validateNumberBoundary()
 		return Value{
 			Type:  ValueTypeNumber,
 			Value: numValue,
