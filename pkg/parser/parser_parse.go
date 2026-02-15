@@ -2,6 +2,24 @@ package parser
 
 import "fmt"
 
+func (p *Parser) validateDisallowedLiteralCodePoints() {
+	line := 1
+	col := 1
+
+	for i, r := range p.input {
+		if isDisallowedLiteralCodePoint(r) && !(i == 0 && r == '\ufeff') {
+			panic(fmt.Sprintf("parse error at line %d, col %d: disallowed literal code point U+%04X", line, col, r))
+		}
+
+		if r == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
+		}
+	}
+}
+
 // Parse parses a KDL document from the provided string
 func (p *Parser) Parse(input string) (doc *Document, err error) {
 	// Recover from panics and convert to error
@@ -24,6 +42,10 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 	p.col = 1
 	p.state = stDocumentStart
 	p.pendingNodeType = ""
+	p.validateDisallowedLiteralCodePoints()
+	if len(p.input) > 0 && p.input[0] == '\ufeff' {
+		p.advance()
+	}
 
 	doc = &Document{
 		Nodes: make([]Node, 0),
@@ -35,7 +57,7 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 	for p.state != stDocumentEnd {
 		switch p.state {
 		case stDocumentStart:
-			p.skipWhitespaceAndComments()
+			p.skipWhitespaceAndCommentsWithEscline()
 			if p.isEOF() {
 				// Empty document or no more nodes
 				p.state = stDocumentEnd
@@ -54,16 +76,16 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 
 					p.advance() // skip '('
 					nodeTypeAnnotation = p.parseTypeAnnotation()
-					p.skipInlineWhitespaceAndComments()
+					p.skipInlineCommentsOnly()
 					if p.isEOF() || p.peek() != ')' {
 						p.panicAt("unterminated type annotation: expected ')'")
 					}
 					p.advance() // skip ')'
-					p.skipInlineWhitespaceAndComments()
+					p.skipInlineCommentsOnly()
 				}
 
 				// Transition to parsing node name based on next character
-				if p.peek() == '"' {
+				if p.peek() == '"' || p.isRawString() {
 					p.state = stNodeNameQuoted
 				} else {
 					// Check if it looks like a number - if so, it's an error
@@ -91,19 +113,28 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 
 			currentNode = &node
 			p.pendingNodeType = ""
+			p.nodeBodySawChildBlock = false
+			p.nodeBodyPendingSeparator = false
 
 			// Transition to parsing node body
 			p.state = stNodeBody
 
 		case stNodeNameQuoted:
-			// Parse the node name (quoted string)
-			nodeName := p.parseQuotedString()
+			// Parse the node name (quoted string or raw string)
+			var nodeName string
+			if p.peek() == '"' {
+				nodeName = p.parseQuotedString()
+			} else {
+				nodeName = p.parseRawString()
+			}
 
 			// Create a node with the parsed name and type annotation (if any)
 			node := newNode(nodeName, p.pendingNodeType)
 
 			currentNode = &node
 			p.pendingNodeType = ""
+			p.nodeBodySawChildBlock = false
+			p.nodeBodyPendingSeparator = false
 
 			// Transition to parsing node body
 			p.state = stNodeBody
@@ -111,7 +142,10 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 		case stNodeBody:
 			// After node name, check for arguments, properties, children, or end
 			// Skip only spaces and tabs, not newlines (newlines terminate nodes)
+			bodyStartPos := p.pos
 			p.skipInlineWhitespaceAndComments()
+			hadSeparator := p.pos != bodyStartPos || p.nodeBodyPendingSeparator
+			p.nodeBodyPendingSeparator = false
 
 			if p.isEOF() {
 				// End of document - add current node
@@ -121,11 +155,25 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 				}
 				p.state = stDocumentEnd
 			} else if p.isSlashdash() {
+				if !hadSeparator {
+					p.panicAt("expected whitespace before slashdash")
+				}
 				// Slashdash comment - skip the next argument or property
-				p.skipSlashdashValue()
+				if p.skipSlashdashValue() {
+					p.nodeBodySawChildBlock = true
+				}
+				p.nodeBodyPendingSeparator = true
 				// Stay in stNodeBody to continue parsing
 			} else {
 				ch := p.peek()
+
+				if p.nodeBodySawChildBlock && ch != '\n' && ch != '\r' && ch != ';' && ch != '{' {
+					p.panicAt("entries are not allowed after a child block")
+				}
+
+				if !hadSeparator && ch != '\n' && ch != '\r' && ch != ';' && ch != '{' {
+					p.panicAt("expected whitespace before value")
+				}
 
 				// Check for newline or semicolon (node terminators)
 				if ch == '\n' || ch == '\r' || ch == ';' {
@@ -140,13 +188,29 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 					// Type annotation followed by value
 					p.state = stArgumentValue
 				} else if ch == '"' {
-					// Quoted string argument
-					p.state = stArgumentValue
+					if currentNode != nil {
+						p.parseQuotedStringArgumentOrProperty(currentNode, true, true)
+					}
 				} else if ch == '{' {
 					// Children block
 					if currentNode != nil {
 						if err := p.parseAndAttachChildren(currentNode); err != nil {
 							return nil, err
+						}
+						p.nodeBodySawChildBlock = true
+
+						p.skipInlineWhitespaceAndComments()
+						for p.isSlashdash() {
+							if !p.skipSlashdashValue() {
+								p.panicAt("only child blocks may follow a child block")
+							}
+							p.skipInlineWhitespaceAndComments()
+						}
+						if !p.isEOF() && p.peek() != '\n' && p.peek() != '\r' && p.peek() != ';' {
+							p.panicAt("expected node terminator after children block")
+						}
+						if !p.isEOF() && p.peek() == ';' {
+							p.advance()
 						}
 					}
 
@@ -175,12 +239,7 @@ func (p *Parser) Parse(input string) (doc *Document, err error) {
 						p.parseIdentifierArgumentOrProperty(currentNode, true, true)
 					}
 				} else {
-					// End of node
-					if currentNode != nil {
-						doc.Nodes = append(doc.Nodes, *currentNode)
-						currentNode = nil
-					}
-					p.state = stDocumentEnd
+					p.panicAt(fmt.Sprintf("unexpected character in node body: '%c'", ch))
 				}
 			}
 

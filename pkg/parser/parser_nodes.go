@@ -34,18 +34,23 @@ func (p *Parser) parseIdentifierArgumentOrProperty(node *Node, allowCommentsAfte
 	if allowCommentsAfterIdentifier {
 		p.skipInlineWhitespaceAndComments()
 	} else {
-		for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t') {
+		for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t' || p.peek() == '\v') {
 			p.advance()
 		}
 	}
 
 	if !p.isEOF() && p.peek() == '=' {
+		if identifier == "true" || identifier == "false" || identifier == "null" {
+			p.panicAt("keyword cannot be used as bare property key")
+		}
+
 		p.advance() // skip '='
 		p.skipInlineWhitespaceAndComments()
 
 		var propValue Value
 		if allowSlashdashValue && p.isSlashdash() {
-			p.skipSlashdashValue()
+			_ = p.skipSlashdashValue()
+			p.nodeBodyPendingSeparator = true
 			propValue = Value{Type: ValueTypeString, Value: ""}
 		} else {
 			propValue = p.parseValueWithOptionalTypeAnnotation()
@@ -60,6 +65,52 @@ func (p *Parser) parseIdentifierArgumentOrProperty(node *Node, allowCommentsAfte
 	p.col = savedCol
 
 	strValue := p.parseIdentifier()
+	if isSpecialFloatIdentifier(strValue) {
+		p.panicAt("special floating-point values must be written as #inf, #-inf, or #nan")
+	}
+	node.Arguments = append(node.Arguments, Value{
+		Type:  ValueTypeString,
+		Value: strValue,
+	})
+}
+
+func (p *Parser) parseQuotedStringArgumentOrProperty(node *Node, allowCommentsAfterIdentifier bool, allowSlashdashValue bool) {
+	savedPos := p.pos
+	savedLine := p.line
+	savedCol := p.col
+
+	identifier := p.parseQuotedString()
+
+	if allowCommentsAfterIdentifier {
+		p.skipInlineWhitespaceAndComments()
+	} else {
+		for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t' || p.peek() == '\v') {
+			p.advance()
+		}
+	}
+
+	if !p.isEOF() && p.peek() == '=' {
+		p.advance() // skip '='
+		p.skipInlineWhitespaceAndComments()
+
+		var propValue Value
+		if allowSlashdashValue && p.isSlashdash() {
+			_ = p.skipSlashdashValue()
+			p.nodeBodyPendingSeparator = true
+			propValue = Value{Type: ValueTypeString, Value: ""}
+		} else {
+			propValue = p.parseValueWithOptionalTypeAnnotation()
+		}
+
+		node.addOrUpdateProperty(identifier, propValue, p.allowDuplicateProperties)
+		return
+	}
+
+	p.pos = savedPos
+	p.line = savedLine
+	p.col = savedCol
+
+	strValue := p.parseQuotedString()
 	node.Arguments = append(node.Arguments, Value{
 		Type:  ValueTypeString,
 		Value: strValue,
@@ -85,20 +136,20 @@ func (p *Parser) isSlashdash() bool {
 
 // skipSlashdashValue skips a single argument or property value commented with slashdash (/-)
 // This can also skip children blocks
-func (p *Parser) skipSlashdashValue() {
+func (p *Parser) skipSlashdashValue() bool {
 	// Skip the /- prefix
 	p.advance() // skip /
 	p.advance() // skip -
 
 	// Skip whitespace between /- and the value
-	p.skipInlineWhitespaceAndComments()
+	p.skipWhitespaceAndCommentsWithEscline()
 
 	ch := p.peek()
 
 	// Check if this is a children block
 	if ch == '{' {
 		p.skipChildrenBlock()
-		return
+		return true
 	}
 
 	// Check if this is a property (identifier followed by =)
@@ -119,6 +170,8 @@ func (p *Parser) skipSlashdashValue() {
 		// Parse as a regular argument value (handles type annotations, strings, numbers, etc.)
 		p.parseValueWithOptionalTypeAnnotation()
 	}
+
+	return false
 }
 
 // skipSlashdashNode skips a node that's commented out with slashdash (/-)
@@ -128,17 +181,17 @@ func (p *Parser) skipSlashdashNode() {
 	p.advance() // skip -
 
 	// Skip whitespace between /- and the node
-	p.skipInlineWhitespaceAndComments()
+	p.skipWhitespaceAndCommentsWithEscline()
 
 	// Skip optional type annotation before node name
 	if p.peek() == '(' {
 		p.advance() // skip '('
 		p.parseTypeAnnotation()
-		p.skipInlineWhitespaceAndComments()
+		p.skipInlineCommentsOnly()
 		if !p.isEOF() && p.peek() == ')' {
 			p.advance() // skip ')'
 		}
-		p.skipInlineWhitespaceAndComments()
+		p.skipInlineCommentsOnly()
 	}
 
 	// Skip the node name (quoted or bare identifier)
@@ -214,7 +267,7 @@ func (p *Parser) skipChildrenBlock() {
 
 	depth := 1
 	for !p.isEOF() && depth > 0 {
-		p.skipWhitespaceAndComments()
+		p.skipWhitespaceAndCommentsWithEscline()
 
 		if p.isEOF() {
 			break
@@ -248,7 +301,7 @@ func (p *Parser) parseChildren() ([]Node, error) {
 	children := make([]Node, 0)
 
 	for {
-		p.skipWhitespaceAndComments()
+		p.skipWhitespaceAndCommentsWithEscline()
 
 		// Check for closing brace
 		if p.isEOF() {
@@ -279,12 +332,12 @@ func (p *Parser) parseChildren() ([]Node, error) {
 
 			p.advance() // skip '('
 			nodeTypeAnnotation = p.parseTypeAnnotation()
-			p.skipInlineWhitespaceAndComments()
+			p.skipInlineCommentsOnly()
 			if p.isEOF() || p.peek() != ')' {
 				return nil, fmt.Errorf("parse error at line %d, col %d: unterminated type annotation: expected ')'", p.line, p.col)
 			}
 			p.advance() // skip ')'
-			p.skipInlineWhitespaceAndComments()
+			p.skipInlineCommentsOnly()
 		}
 
 		// Check if node name is quoted or bare

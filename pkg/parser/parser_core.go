@@ -24,6 +24,8 @@ type Parser struct {
 	pendingNodeType          string // temporary storage for node type annotation before node creation
 	allowDuplicateProperties bool   // if true, keeps all duplicate properties; if false (default), rightmost wins per KDL v2 spec
 	disableTypeAnnotations   bool   // if true, type annotations are not allowed and will cause parse errors
+	nodeBodySawChildBlock    bool
+	nodeBodyPendingSeparator bool
 }
 
 // New creates a new Parser instance

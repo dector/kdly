@@ -2,6 +2,82 @@ package parser
 
 import "fmt"
 
+func (p *Parser) consumeEscapedWhitespace(first rune) bool {
+	consumedNewline := false
+
+	if first == '\r' && !p.isEOF() && p.peek() == '\n' {
+		p.advance()
+		consumedNewline = true
+	}
+
+	if first == '\n' || first == '\r' {
+		consumedNewline = true
+	}
+
+	for !p.isEOF() {
+		ch := p.peek()
+		if ch != ' ' && ch != '\t' && ch != '\n' && ch != '\r' {
+			break
+		}
+		if ch == '\n' || ch == '\r' {
+			consumedNewline = true
+		}
+		p.advance()
+	}
+
+	return consumedNewline
+}
+
+func (p *Parser) parseUnicodeEscape() rune {
+	if p.peek() != '{' {
+		p.panicAt("invalid unicode escape: expected '{'")
+	}
+	p.advance() // Skip '{'
+
+	hexDigits := make([]rune, 0, 6)
+	for !p.isEOF() && p.peek() != '}' {
+		if len(hexDigits) >= 6 {
+			p.panicAt("invalid unicode escape: codepoint must be 1-6 hex digits")
+		}
+		hexDigits = append(hexDigits, p.peek())
+		p.advance()
+	}
+
+	if p.isEOF() {
+		p.panicAt("unterminated unicode escape")
+	}
+
+	p.advance() // Skip '}'
+
+	if len(hexDigits) == 0 {
+		p.panicAt("invalid unicode escape: empty codepoint")
+	}
+
+	var codepoint int
+	for _, digit := range hexDigits {
+		codepoint *= 16
+		if digit >= '0' && digit <= '9' {
+			codepoint += int(digit - '0')
+		} else if digit >= 'a' && digit <= 'f' {
+			codepoint += int(digit-'a') + 10
+		} else if digit >= 'A' && digit <= 'F' {
+			codepoint += int(digit-'A') + 10
+		} else {
+			p.panicAt(fmt.Sprintf("invalid hex digit in unicode escape: %c", digit))
+		}
+	}
+
+	if codepoint > 0x10ffff {
+		p.panicAt("invalid unicode escape: codepoint out of range")
+	}
+
+	if codepoint >= 0xd800 && codepoint <= 0xdfff {
+		p.panicAt("invalid unicode escape: surrogate codepoint")
+	}
+
+	return rune(codepoint)
+}
+
 // parseKeyword parses a hash-prefixed keyword (#true, #false, #null, #inf, #-inf, #nan)
 // Returns the keyword without the # prefix and the value type
 func (p *Parser) parseKeyword() (string, ValueType) {
@@ -105,6 +181,10 @@ func (p *Parser) parseQuotedString() string {
 	for !p.isEOF() {
 		ch := p.peek()
 
+		if ch == '\n' || ch == '\r' {
+			p.panicAt("single-line string cannot contain newline")
+		}
+
 		if ch == '"' {
 			// End of string
 			p.advance() // Skip closing quote
@@ -126,8 +206,6 @@ func (p *Parser) parseQuotedString() string {
 				result = append(result, '"')
 			case '\\':
 				result = append(result, '\\')
-			case '/':
-				result = append(result, '/')
 			case 'n':
 				result = append(result, '\n')
 			case 'r':
@@ -138,41 +216,12 @@ func (p *Parser) parseQuotedString() string {
 				result = append(result, '\b')
 			case 'f':
 				result = append(result, '\f')
+			case 's':
+				result = append(result, ' ')
 			case 'u':
-				// Unicode escape: \u{XXXX}
-				if p.peek() != '{' {
-					p.panicAt("invalid unicode escape: expected '{'")
-				}
-				p.advance() // Skip '{'
-
-				var hexDigits []rune
-				for !p.isEOF() && p.peek() != '}' {
-					hexDigits = append(hexDigits, p.peek())
-					p.advance()
-				}
-
-				if p.isEOF() {
-					p.panicAt("unterminated unicode escape")
-				}
-
-				p.advance() // Skip '}'
-
-				// Parse hex digits
-				var codepoint int
-				for _, digit := range hexDigits {
-					codepoint *= 16
-					if digit >= '0' && digit <= '9' {
-						codepoint += int(digit - '0')
-					} else if digit >= 'a' && digit <= 'f' {
-						codepoint += int(digit-'a') + 10
-					} else if digit >= 'A' && digit <= 'F' {
-						codepoint += int(digit-'A') + 10
-					} else {
-						p.panicAt(fmt.Sprintf("invalid hex digit in unicode escape: %c", digit))
-					}
-				}
-
-				result = append(result, rune(codepoint))
+				result = append(result, p.parseUnicodeEscape())
+			case ' ', '\t', '\n', '\r':
+				p.consumeEscapedWhitespace(escapeChar)
 			default:
 				p.panicAt(fmt.Sprintf("invalid escape sequence: \\%c", escapeChar))
 			}
@@ -190,8 +239,17 @@ func (p *Parser) parseQuotedString() string {
 // parseMultilineString parses a multiline string (already past the opening """ and newline)
 // Handles dedentation based on the closing quotes' indentation
 func (p *Parser) parseMultilineString() string {
-	var lines []string
+	type multilineLine struct {
+		text          []rune
+		literalPrefix int
+	}
+
+	var lines []multilineLine
 	var currentLine []rune
+	literalPrefix := 0
+	prefixActive := true
+	currentLineHasWhitespaceEscape := false
+	sawWhitespaceEscape := false
 
 	// Parse lines until we find the closing """
 	for !p.isEOF() {
@@ -200,41 +258,57 @@ func (p *Parser) parseMultilineString() string {
 		if ch == '"' {
 			// Check if this is the closing """
 			if p.pos+2 < len(p.input) && p.input[p.pos+1] == '"' && p.input[p.pos+2] == '"' {
-				// Found closing """
-				// Save the current line first (this is the closing quotes line)
-				lines = append(lines, string(currentLine))
+				closingLine := multilineLine{
+					text:          append([]rune(nil), currentLine...),
+					literalPrefix: literalPrefix,
+				}
+				lines = append(lines, closingLine)
+				closingLineHasWhitespaceEscape := currentLineHasWhitespaceEscape
 
 				// Skip the closing """
 				p.advance()
 				p.advance()
 				p.advance()
 
-				// Calculate dedentation
-				// The indentation of the last line (closing quotes line) determines what to strip
-				lastLine := lines[len(lines)-1]
-				dedentAmount := 0
-				for dedentAmount < len(lastLine) && (lastLine[dedentAmount] == ' ' || lastLine[dedentAmount] == '\t') {
-					dedentAmount++
+				// Dedent prefix comes from literal leading whitespace on the closing line.
+				dedentPrefixLen := 0
+				for dedentPrefixLen < len(closingLine.text) && isNonNewlineWhitespace(closingLine.text[dedentPrefixLen]) {
+					dedentPrefixLen++
+				}
+				dedentPrefix := append([]rune(nil), closingLine.text[:dedentPrefixLen]...)
+
+				applyDedent := func(line multilineLine) []rune {
+					if len(line.text) == 0 {
+						return []rune{}
+					}
+					if len(line.text) < len(dedentPrefix) {
+						p.panicAt("multiline string line has insufficient indentation")
+					}
+					if line.literalPrefix < len(dedentPrefix) {
+						p.panicAt("multiline string has non-literal indentation prefix")
+					}
+					for i := 0; i < len(dedentPrefix); i++ {
+						if line.text[i] != dedentPrefix[i] {
+							p.panicAt("multiline string has inconsistent indentation characters")
+						}
+					}
+					return line.text[len(dedentPrefix):]
 				}
 
-				// Apply dedentation to all lines
 				var result []rune
 				for i, line := range lines {
-					// Strip the common indentation (but only if the line has enough characters)
-					stripped := line
-					if len(line) >= dedentAmount {
-						stripped = line[dedentAmount:]
-					}
-
-					// For all lines except the last (which is the closing quotes line),
-					// add them with their newlines
 					if i < len(lines)-1 {
-						result = append(result, []rune(stripped)...)
-						result = append(result, '\n')
+						stripped := applyDedent(line)
+						result = append(result, stripped...)
+						if i < len(lines)-2 {
+							result = append(result, '\n')
+						} else if !closingLineHasWhitespaceEscape && !sawWhitespaceEscape {
+							result = append(result, '\n')
+						}
 					} else {
-						// Last line is the closing quotes line - only include if non-empty after stripping
+						stripped := applyDedent(line)
 						if len(stripped) > 0 {
-							result = append(result, []rune(stripped)...)
+							result = append(result, stripped...)
 						}
 					}
 				}
@@ -243,12 +317,16 @@ func (p *Parser) parseMultilineString() string {
 			} else {
 				// Just a regular quote character
 				currentLine = append(currentLine, ch)
+				prefixActive = false
 				p.advance()
 			}
 		} else if ch == '\n' {
 			// End of line
-			lines = append(lines, string(currentLine))
+			lines = append(lines, multilineLine{text: append([]rune(nil), currentLine...), literalPrefix: literalPrefix})
 			currentLine = []rune{}
+			literalPrefix = 0
+			prefixActive = true
+			currentLineHasWhitespaceEscape = false
 			p.advance()
 		} else if ch == '\\' {
 			// Escape sequence
@@ -263,26 +341,63 @@ func (p *Parser) parseMultilineString() string {
 			switch escapeChar {
 			case '"':
 				currentLine = append(currentLine, '"')
+				prefixActive = false
 			case '\\':
 				currentLine = append(currentLine, '\\')
-			case '/':
-				currentLine = append(currentLine, '/')
+				prefixActive = false
 			case 'n':
 				currentLine = append(currentLine, '\n')
+				prefixActive = false
 			case 'r':
 				currentLine = append(currentLine, '\r')
+				prefixActive = false
 			case 't':
 				currentLine = append(currentLine, '\t')
+				prefixActive = false
 			case 'b':
 				currentLine = append(currentLine, '\b')
+				prefixActive = false
 			case 'f':
 				currentLine = append(currentLine, '\f')
+				prefixActive = false
+			case 's':
+				currentLine = append(currentLine, ' ')
+				prefixActive = false
+			case 'u':
+				r := p.parseUnicodeEscape()
+				currentLine = append(currentLine, r)
+				if prefixActive {
+					if isNonNewlineWhitespace(r) {
+						prefixActive = false
+					} else {
+						prefixActive = false
+					}
+				}
+			case ' ', '\t', '\n', '\r':
+				consumedNewline := p.consumeEscapedWhitespace(escapeChar)
+				currentLineHasWhitespaceEscape = true
+				sawWhitespaceEscape = true
+				prefixActive = false
+				if consumedNewline && p.pos+2 < len(p.input) && p.input[p.pos] == '"' && p.input[p.pos+1] == '"' && p.input[p.pos+2] == '"' {
+					for _, r := range currentLine {
+						if !isNonNewlineWhitespace(r) {
+							p.panicAt("multiline string cannot end with escaped trailing whitespace")
+						}
+					}
+				}
 			default:
 				p.panicAt(fmt.Sprintf("invalid escape sequence in multiline string: \\%c", escapeChar))
 			}
 		} else {
 			// Regular character
 			currentLine = append(currentLine, ch)
+			if prefixActive {
+				if isNonNewlineWhitespace(ch) {
+					literalPrefix++
+				} else {
+					prefixActive = false
+				}
+			}
 			p.advance()
 		}
 	}
@@ -330,55 +445,39 @@ func (p *Parser) parseMultilineRawString(hashCount int) string {
 						p.advance()
 					}
 
-					// Calculate dedentation
-					// The indentation of the last line (closing quotes line) determines what to strip
-					lastLine := lines[len(lines)-1]
-					dedentAmount := 0
-					dedentChar := rune(0)
+					lastLine := []rune(lines[len(lines)-1])
+					dedentPrefixLen := 0
+					for dedentPrefixLen < len(lastLine) && isNonNewlineWhitespace(lastLine[dedentPrefixLen]) {
+						dedentPrefixLen++
+					}
+					dedentPrefix := append([]rune(nil), lastLine[:dedentPrefixLen]...)
 
-					// Determine the common whitespace prefix from the closing line
-					for dedentAmount < len(lastLine) {
-						ch := rune(lastLine[dedentAmount])
-						if ch != ' ' && ch != '\t' {
-							break
+					applyDedent := func(line string) []rune {
+						runes := []rune(line)
+						if len(runes) == 0 {
+							return []rune{}
 						}
-						if dedentAmount == 0 {
-							dedentChar = ch
-						} else if ch != dedentChar {
-							// Mixed whitespace characters
-							p.panicAt("multiline raw string has mixed whitespace in indentation")
+						if len(runes) < len(dedentPrefix) {
+							p.panicAt("multiline raw string line has insufficient indentation")
 						}
-						dedentAmount++
+						for i := 0; i < len(dedentPrefix); i++ {
+							if runes[i] != dedentPrefix[i] {
+								p.panicAt("multiline raw string has inconsistent indentation characters")
+							}
+						}
+						return runes[len(dedentPrefix):]
 					}
 
-					// Apply dedentation to all lines
 					var result []rune
 					for i, line := range lines {
 						if i == len(lines)-1 {
-							// Last line is the closing quotes line - only include if non-empty after stripping
-							stripped := line
-							if len(line) >= dedentAmount {
-								stripped = line[dedentAmount:]
-							}
+							stripped := applyDedent(line)
 							if len(stripped) > 0 {
-								result = append(result, []rune(stripped)...)
+								result = append(result, stripped...)
 							}
 						} else {
-							// Regular content line
-							// Verify the line has the correct indentation if it's not empty
-							if len(line) > 0 {
-								// Check if the line starts with the expected indentation
-								if len(line) < dedentAmount {
-									p.panicAt("multiline raw string line has insufficient indentation")
-								}
-								for j := 0; j < dedentAmount; j++ {
-									if rune(line[j]) != dedentChar {
-										p.panicAt("multiline raw string has inconsistent indentation characters")
-									}
-								}
-								stripped := line[dedentAmount:]
-								result = append(result, []rune(stripped)...)
-							}
+							stripped := applyDedent(line)
+							result = append(result, stripped...)
 							result = append(result, '\n')
 						}
 					}
@@ -450,32 +549,18 @@ func (p *Parser) parseRawString() string {
 	}
 	p.advance() // Skip first quote
 
-	// Check if this is a multiline raw string (""")
+	// Check if this is a multiline raw string (""").
 	isMultiline := false
-	if !p.isEOF() && p.peek() == '"' {
+	if p.pos+1 < len(p.input) && p.peek() == '"' && p.input[p.pos+1] == '"' {
 		p.advance() // Skip second quote
-		if !p.isEOF() && p.peek() == '"' {
-			p.advance() // Skip third quote
-			isMultiline = true
+		p.advance() // Skip third quote
+		isMultiline = true
 
-			// Multiline raw strings must be followed by a newline
-			if p.isEOF() || p.peek() != '\n' {
-				p.panicAt("multiline raw string must be followed by newline")
-			}
-			p.advance() // Skip newline
-		} else {
-			// It was just an empty raw string #""#
-			// Check for closing # symbols
-			closingHashCount := 0
-			for !p.isEOF() && p.peek() == '#' {
-				closingHashCount++
-				p.advance()
-			}
-			if closingHashCount == hashCount {
-				return ""
-			}
-			p.panicAt("mismatched # count in raw string")
+		// Multiline raw strings must be followed by a newline.
+		if p.isEOF() || p.peek() != '\n' {
+			p.panicAt("multiline raw string must be followed by newline")
 		}
+		p.advance() // Skip newline
 	}
 
 	if isMultiline {

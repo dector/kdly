@@ -9,7 +9,8 @@ import (
 // looksLikeNumber checks if the current position starts a numeric literal
 // Returns true for: integers (123), floats (1.23), hex (0x1f), binary (0b101), octal (0o77)
 // Also handles signs (+123, -456) and scientific notation (1e10, 1.5e-3)
-// Also handles decimal-only numbers like .5, +.5, -.5
+// Also recognizes decimal-only forms like .5, +.5, -.5 so they can
+// be validated and rejected by parseNumber.
 func (p *Parser) looksLikeNumber() bool {
 	pos := p.pos
 	if pos >= len(p.input) {
@@ -108,8 +109,18 @@ func (p *Parser) parseNumber() string {
 	start := p.pos
 
 	// Handle optional sign
+	hadSign := false
 	if p.peek() == '+' || p.peek() == '-' {
+		hadSign = true
 		p.advance()
+	}
+
+	if !p.isEOF() && p.peek() == '.' {
+		if hadSign && p.pos+1 < len(p.input) && isDigit(p.input[p.pos+1]) {
+			// Signed fractional forms like -.5 and +.5 are allowed.
+		} else {
+			p.panicAt("numeric literal must have at least one digit before decimal point")
+		}
 	}
 
 	// Check for special bases
@@ -129,6 +140,9 @@ func (p *Parser) parseNumber() string {
 			if !hasDigitsAfterPrefix(p.input[digitStart:p.pos], isHexDigit) {
 				p.panicAt("hexadecimal number must have at least one digit after 0x")
 			}
+			if p.pos > digitStart && p.input[digitStart] == '_' {
+				p.panicAt("hexadecimal number cannot start with underscore after 0x")
+			}
 			return numStr
 		}
 
@@ -145,6 +159,9 @@ func (p *Parser) parseNumber() string {
 			if !hasDigitsAfterPrefix(p.input[digitStart:p.pos], isBinaryDigit) {
 				p.panicAt("binary number must have at least one digit after 0b")
 			}
+			if p.pos > digitStart && p.input[digitStart] == '_' {
+				p.panicAt("binary number cannot start with underscore after 0b")
+			}
 			return numStr
 		}
 
@@ -160,6 +177,9 @@ func (p *Parser) parseNumber() string {
 			// Validate: must have at least one octal digit after 0o
 			if !hasDigitsAfterPrefix(p.input[digitStart:p.pos], isOctalDigit) {
 				p.panicAt("octal number must have at least one digit after 0o")
+			}
+			if p.pos > digitStart && p.input[digitStart] == '_' {
+				p.panicAt("octal number cannot start with underscore after 0o")
 			}
 			return numStr
 		}

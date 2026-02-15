@@ -1,8 +1,86 @@
 package parser
 
+// isNonNewlineWhitespace checks if a rune is whitespace that is not a newline.
+// This includes KDL v2 unicode-space code points plus legacy VT handling kept
+// for compatibility with existing parser behavior.
+func isNonNewlineWhitespace(r rune) bool {
+	if r == '\t' || r == ' ' || r == '\v' {
+		return true
+	}
+
+	switch r {
+	case '\u00a0', '\u1680', '\u202f', '\u205f', '\u3000':
+		return true
+	}
+
+	return r >= '\u2000' && r <= '\u200a'
+}
+
 // isWhitespace checks if a rune is whitespace (space, tab, newline, carriage return)
 func isWhitespace(r rune) bool {
-	return r == ' ' || r == '\t' || r == '\n' || r == '\r'
+	return isNonNewlineWhitespace(r) || r == '\n' || r == '\r'
+}
+
+func isDisallowedLiteralCodePoint(r rune) bool {
+	if r <= 0x0008 || (r >= 0x000e && r <= 0x001f) {
+		return true
+	}
+
+	if r == 0x007f {
+		return true
+	}
+
+	if r >= 0x200e && r <= 0x200f {
+		return true
+	}
+
+	if r >= 0x202a && r <= 0x202e {
+		return true
+	}
+
+	if r >= 0x2066 && r <= 0x2069 {
+		return true
+	}
+
+	return r == '\ufeff'
+}
+
+func (p *Parser) trySkipEscapedNewline() bool {
+	if p.isEOF() || p.peek() != '\\' {
+		return false
+	}
+
+	savedPos := p.pos
+	savedLine := p.line
+	savedCol := p.col
+
+	p.advance() // skip '\\'
+
+	for !p.isEOF() && isNonNewlineWhitespace(p.peek()) {
+		p.advance()
+	}
+
+	if !p.isEOF() && p.peek() == '/' && p.pos+1 < len(p.input) && p.input[p.pos+1] == '/' {
+		p.skipInlineComments()
+	}
+
+	if !p.isEOF() && p.peek() == '\n' {
+		p.advance()
+		return true
+	}
+
+	if !p.isEOF() && p.peek() == '\r' {
+		p.advance()
+		if !p.isEOF() && p.peek() == '\n' {
+			p.advance()
+		}
+		return true
+	}
+
+	p.pos = savedPos
+	p.line = savedLine
+	p.col = savedCol
+	return false
 }
 
 // skipWhitespace skips all whitespace characters
@@ -135,32 +213,14 @@ func (p *Parser) skipInlineWhitespaceAndComments() {
 	for {
 		startPos := p.pos
 		// Skip spaces and tabs only (not newlines)
-		for !p.isEOF() && (p.peek() == ' ' || p.peek() == '\t') {
+		for !p.isEOF() && isNonNewlineWhitespace(p.peek()) {
 			p.advance()
 		}
 
 		// Check for line continuation: backslash followed by newline
-		if !p.isEOF() && p.peek() == '\\' {
-			// Look ahead to see if there's a newline
-			if p.pos+1 < len(p.input) {
-				nextCh := p.input[p.pos+1]
-				if nextCh == '\n' {
-					// Line continuation - skip backslash and newline
-					p.advance() // skip \
-					p.advance() // skip \n
-					allowCommentNewline = true
-					continue // Continue skipping whitespace after the continuation
-				} else if nextCh == '\r' {
-					// Handle \r\n or just \r
-					p.advance() // skip \
-					p.advance() // skip \r
-					if !p.isEOF() && p.peek() == '\n' {
-						p.advance() // skip \n
-					}
-					allowCommentNewline = true
-					continue // Continue skipping whitespace after the continuation
-				}
-			}
+		if p.trySkipEscapedNewline() {
+			allowCommentNewline = true
+			continue
 		}
 
 		// Try to skip comments
@@ -187,6 +247,34 @@ func (p *Parser) skipInlineWhitespaceAndComments() {
 	}
 }
 
+// skipInlineCommentsOnly skips inline comments without consuming whitespace.
+// This is used in places where spaces are not allowed but comments are.
+func (p *Parser) skipInlineCommentsOnly() {
+	for p.skipInlineComments() {
+	}
+}
+
+// skipWhitespaceAndCommentsWithEscline skips all whitespace/comments and
+// supports line continuation (\ followed by newline).
+// Unlike skipInlineWhitespaceAndComments, this also consumes newlines.
+func (p *Parser) skipWhitespaceAndCommentsWithEscline() {
+	for {
+		startPos := p.pos
+
+		p.skipWhitespace()
+
+		if p.trySkipEscapedNewline() {
+			continue
+		}
+
+		p.skipComments()
+
+		if p.pos == startPos {
+			break
+		}
+	}
+}
+
 // isForbiddenInBareIdentifier checks if a rune is forbidden in bare identifiers
 // According to KDL v2 spec, bare identifiers cannot contain:
 // - Whitespace
@@ -198,6 +286,8 @@ func isForbiddenInBareIdentifier(r rune) bool {
 	// Check reserved syntax characters
 	switch r {
 	case '[', ']', '{', '}', '(', ')', '\\', '/', '#', '"', ';', '=':
+		return true
+	case '\ufeff':
 		return true
 	}
 	return false

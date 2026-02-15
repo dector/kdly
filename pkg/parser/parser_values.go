@@ -16,14 +16,14 @@ func (p *Parser) parseValueWithOptionalTypeAnnotation() Value {
 
 		// Parse the type annotation token
 		typeAnnotation = p.parseTypeAnnotation()
-		p.skipInlineWhitespaceAndComments()
+		p.skipInlineCommentsOnly()
 
 		// Expect closing ')'
 		if p.isEOF() || p.peek() != ')' {
 			p.panicAt("expected ')' after type annotation")
 		}
 		p.advance() // skip ')'
-		p.skipInlineWhitespaceAndComments()
+		p.skipInlineCommentsOnly()
 	}
 
 	// Now parse the actual value
@@ -76,6 +76,9 @@ func (p *Parser) parseValueWithOptionalTypeAnnotation() Value {
 	} else if isIdentifierStart(ch) {
 		// Bare identifier string
 		strValue := p.parseIdentifier()
+		if isSpecialFloatIdentifier(strValue) {
+			p.panicAt("special floating-point values must be written as #inf, #-inf, or #nan")
+		}
 		value = Value{
 			Type:           ValueTypeString,
 			Value:          strValue,
@@ -86,4 +89,8 @@ func (p *Parser) parseValueWithOptionalTypeAnnotation() Value {
 	}
 
 	return value
+}
+
+func isSpecialFloatIdentifier(s string) bool {
+	return s == "inf" || s == "-inf" || s == "nan"
 }
