@@ -19,11 +19,19 @@ type Value = parser.Value
 // ValueType represents the type of a value
 type ValueType = parser.ValueType
 
+// NumberBase represents the original base of a parsed numeric literal.
+type NumberBase = parser.NumberBase
+
 const (
 	ValueTypeString  = parser.ValueTypeString
 	ValueTypeNumber  = parser.ValueTypeNumber
 	ValueTypeBoolean = parser.ValueTypeBoolean
 	ValueTypeNull    = parser.ValueTypeNull
+
+	NumberBaseDecimal     = parser.NumberBaseDecimal
+	NumberBaseHexadecimal = parser.NumberBaseHexadecimal
+	NumberBaseOctal       = parser.NumberBaseOctal
+	NumberBaseBinary      = parser.NumberBaseBinary
 )
 
 // Property represents a key-value property on a node

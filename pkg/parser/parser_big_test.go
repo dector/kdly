@@ -374,7 +374,7 @@ func TestParseLoggingConfig(t *testing.T) {
 							{
 								Name: "max-size",
 								Arguments: []Value{
-									{Type: ValueTypeNumber, Value: "0x6400000", TypeAnnotation: "bytes"},
+									{Type: ValueTypeNumber, Value: "104857600", TypeAnnotation: "bytes", OriginalBase: NumberBaseHexadecimal},
 								},
 								Properties: []Property{},
 								Children:   []Node{},

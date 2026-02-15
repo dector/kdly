@@ -149,7 +149,7 @@ func Test_ArgHexType(t *testing.T) {
 			{
 				Name: "node",
 				Arguments: []Value{
-					{Type: ValueTypeNumber, Value: "0x10", TypeAnnotation: "type"},
+					{Type: ValueTypeNumber, Value: "16", TypeAnnotation: "type", OriginalBase: NumberBaseHexadecimal},
 				},
 				Properties: []Property{},
 				Children:   []Node{},
@@ -433,7 +433,7 @@ func Test_Binary(t *testing.T) {
 			{
 				Name: "node",
 				Arguments: []Value{
-					{Type: ValueTypeNumber, Value: "2"},
+					{Type: ValueTypeNumber, Value: "2", OriginalBase: NumberBaseBinary},
 				},
 				Properties: []Property{},
 				Children:   []Node{},
@@ -454,7 +454,7 @@ func Test_BinaryTrailingUnderscore(t *testing.T) {
 			{
 				Name: "node",
 				Arguments: []Value{
-					{Type: ValueTypeNumber, Value: "2"},
+					{Type: ValueTypeNumber, Value: "2", OriginalBase: NumberBaseBinary},
 				},
 				Properties: []Property{},
 				Children:   []Node{},
@@ -476,7 +476,7 @@ func Test_BinaryUnderscore(t *testing.T) {
 			{
 				Name: "node",
 				Arguments: []Value{
-					{Type: ValueTypeNumber, Value: "2"},
+					{Type: ValueTypeNumber, Value: "2", OriginalBase: NumberBaseBinary},
 				},
 				Properties: []Property{},
 				Children:   []Node{},
@@ -538,7 +538,7 @@ func Test_BlankPropType(t *testing.T) {
 	want := &Document{
 		Nodes: []Node{
 			{
-				Name: "node",
+				Name:      "node",
 				Arguments: []Value{},
 				Properties: []Property{
 					{Key: "key", Value: Value{Type: ValueTypeBoolean, Value: "true", TypeAnnotation: ""}},
@@ -1643,7 +1643,7 @@ func Test_Hex(t *testing.T) {
 			{
 				Name: "node",
 				Arguments: []Value{
-					{Type: ValueTypeNumber, Value: "0xabcdef1234567890"},
+					{Type: ValueTypeNumber, Value: "12379813812177893520", OriginalBase: NumberBaseHexadecimal},
 				},
 				Properties: []Property{},
 				Children:   []Node{},
@@ -1665,7 +1665,7 @@ func Test_HexInt(t *testing.T) {
 			{
 				Name: "node",
 				Arguments: []Value{
-					{Type: ValueTypeNumber, Value: "0xABCDEF0123456789abcdef"},
+					{Type: ValueTypeNumber, Value: "207698809136909011942886895", OriginalBase: NumberBaseHexadecimal},
 				},
 				Properties: []Property{},
 				Children:   []Node{},
@@ -2956,7 +2956,7 @@ func Test_Octal(t *testing.T) {
 			{
 				Name: "node",
 				Arguments: []Value{
-					{Type: ValueTypeNumber, Value: "0o76543210"},
+					{Type: ValueTypeNumber, Value: "16434824", OriginalBase: NumberBaseOctal},
 				},
 				Properties: []Property{},
 				Children:   []Node{},
@@ -3207,7 +3207,7 @@ func Test_PropHexType(t *testing.T) {
 				Name:      "node",
 				Arguments: []Value{},
 				Properties: []Property{
-					{Key: "key", Value: Value{Type: ValueTypeNumber, Value: "0x10", TypeAnnotation: "type"}},
+					{Key: "key", Value: Value{Type: ValueTypeNumber, Value: "16", TypeAnnotation: "type", OriginalBase: NumberBaseHexadecimal}},
 				},
 				Children: []Node{},
 			},

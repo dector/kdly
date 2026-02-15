@@ -335,7 +335,7 @@ func TestSerializeCIPipelineStage(t *testing.T) {
 	assert.Equal(t, doc, roundTrip)
 }
 
-// TestSerializeLoggingConfig tests logging with hex numbers and type annotations
+// TestSerializeLoggingConfig tests logging with typed numeric values
 func TestSerializeLoggingConfig(t *testing.T) {
 	doc := &parser.Document{
 		Nodes: []parser.Node{
@@ -368,7 +368,7 @@ func TestSerializeLoggingConfig(t *testing.T) {
 							{
 								Name: "max-size",
 								Arguments: []parser.Value{
-									{Type: parser.ValueTypeNumber, Value: "0x6400000", TypeAnnotation: "bytes"},
+									{Type: parser.ValueTypeNumber, Value: "104857600", TypeAnnotation: "bytes"},
 								},
 								Properties: []parser.Property{},
 								Children:   []parser.Node{},
@@ -421,7 +421,7 @@ func TestSerializeLoggingConfig(t *testing.T) {
   level info
   format json
   rotation {
-    max-size (bytes)0x6400000
+    max-size (bytes)104857600
     compress #true
   }
   loggers {

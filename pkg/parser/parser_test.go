@@ -214,7 +214,7 @@ func TestNodeWithHexNumbers(t *testing.T) {
 			{
 				Name: "color",
 				Arguments: []Value{
-					{Type: ValueTypeNumber, Value: "0xdeadbeef"},
+					{Type: ValueTypeNumber, Value: "3735928559", OriginalBase: NumberBaseHexadecimal},
 				},
 				Properties: []Property{},
 				Children:   []Node{},
@@ -1313,8 +1313,8 @@ func TestNumbersWithUnderscores_Hexadecimal(t *testing.T) {
 			{
 				Name: "color",
 				Arguments: []Value{
-					{Type: ValueTypeNumber, Value: "0xdead_beef"},
-					{Type: ValueTypeNumber, Value: "0xFF_00_FF"},
+					{Type: ValueTypeNumber, Value: "3735928559", OriginalBase: NumberBaseHexadecimal},
+					{Type: ValueTypeNumber, Value: "16711935", OriginalBase: NumberBaseHexadecimal},
 				},
 				Properties: []Property{},
 				Children:   []Node{},
@@ -1335,8 +1335,8 @@ func TestNumbersWithUnderscores_Binary(t *testing.T) {
 			{
 				Name: "bits",
 				Arguments: []Value{
-					{Type: ValueTypeNumber, Value: "0b1010_1100"},
-					{Type: ValueTypeNumber, Value: "0b1111_0000_1111_0000"},
+					{Type: ValueTypeNumber, Value: "172", OriginalBase: NumberBaseBinary},
+					{Type: ValueTypeNumber, Value: "61680", OriginalBase: NumberBaseBinary},
 				},
 				Properties: []Property{},
 				Children:   []Node{},
@@ -1379,8 +1379,8 @@ func TestBinaryAndOctalNumbers_Basic(t *testing.T) {
 			{
 				Name: "bits",
 				Arguments: []Value{
-					{Type: ValueTypeNumber, Value: "0b1010"},
-					{Type: ValueTypeNumber, Value: "0o755"},
+					{Type: ValueTypeNumber, Value: "10", OriginalBase: NumberBaseBinary},
+					{Type: ValueTypeNumber, Value: "493", OriginalBase: NumberBaseOctal},
 				},
 				Properties: []Property{},
 				Children:   []Node{},
@@ -1401,8 +1401,8 @@ func TestBinaryAndOctalNumbers_UpperCase(t *testing.T) {
 			{
 				Name: "bits",
 				Arguments: []Value{
-					{Type: ValueTypeNumber, Value: "0B1010"},
-					{Type: ValueTypeNumber, Value: "0O755"},
+					{Type: ValueTypeNumber, Value: "10", OriginalBase: NumberBaseBinary},
+					{Type: ValueTypeNumber, Value: "493", OriginalBase: NumberBaseOctal},
 				},
 				Properties: []Property{},
 				Children:   []Node{},
@@ -1423,8 +1423,8 @@ func TestBinaryAndOctalNumbers_WithUnderscores(t *testing.T) {
 			{
 				Name: "bits",
 				Arguments: []Value{
-					{Type: ValueTypeNumber, Value: "0b1111_0000"},
-					{Type: ValueTypeNumber, Value: "0o7_5_5"},
+					{Type: ValueTypeNumber, Value: "240", OriginalBase: NumberBaseBinary},
+					{Type: ValueTypeNumber, Value: "493", OriginalBase: NumberBaseOctal},
 				},
 				Properties: []Property{},
 				Children:   []Node{},

@@ -1,6 +1,10 @@
 package parser
 
-import "fmt"
+import (
+	"fmt"
+	"math/big"
+	"strings"
+)
 
 // Document represents the top-level KDL document
 type Document struct {
@@ -19,9 +23,10 @@ type Node struct {
 
 // Value represents any KDL value (argument or property value)
 type Value struct {
-	Type           ValueType // "string", "number", "boolean", "null"
-	Value          string    // Raw value as string
-	TypeAnnotation string    // Optional type annotation like "u8", "uuid"
+	Type           ValueType  // "string", "number", "boolean", "null"
+	Value          string     // String value; numeric literals are normalized to decimal text
+	TypeAnnotation string     // Optional type annotation like "u8", "uuid"
+	OriginalBase   NumberBase // Original numeric base for number literals
 }
 
 // ValueType represents the type of a value
@@ -32,6 +37,16 @@ const (
 	ValueTypeNumber  ValueType = "number"
 	ValueTypeBoolean ValueType = "boolean"
 	ValueTypeNull    ValueType = "null"
+)
+
+// NumberBase represents the original base of a parsed numeric literal.
+type NumberBase int
+
+const (
+	NumberBaseDecimal NumberBase = iota
+	NumberBaseHexadecimal
+	NumberBaseOctal
+	NumberBaseBinary
 )
 
 // Property represents a key-value property on a node
@@ -724,6 +739,60 @@ func (p *Parser) parseNumber() string {
 	return string(p.input[start:p.pos])
 }
 
+// normalizeNumberValue canonicalizes numeric literals to decimal string form
+// and returns the original parsed base.
+func normalizeNumberValue(num string) (string, NumberBase) {
+	if num == "" {
+		return num, NumberBaseDecimal
+	}
+
+	sign := ""
+	body := num
+	if body[0] == '+' || body[0] == '-' {
+		sign = body[:1]
+		body = body[1:]
+		if body == "" {
+			return num, NumberBaseDecimal
+		}
+	}
+
+	base := NumberBaseDecimal
+	radix := 10
+	if len(body) >= 2 && body[0] == '0' {
+		switch body[1] {
+		case 'x', 'X':
+			base = NumberBaseHexadecimal
+			radix = 16
+		case 'o', 'O':
+			base = NumberBaseOctal
+			radix = 8
+		case 'b', 'B':
+			base = NumberBaseBinary
+			radix = 2
+		}
+	}
+
+	if radix == 10 {
+		return num, NumberBaseDecimal
+	}
+
+	digits := strings.ReplaceAll(body[2:], "_", "")
+	if digits == "" {
+		return num, base
+	}
+
+	parsed := new(big.Int)
+	if _, ok := parsed.SetString(digits, radix); !ok {
+		return num, base
+	}
+
+	if sign == "-" {
+		parsed.Neg(parsed)
+	}
+
+	return parsed.String(), base
+}
+
 // hasDigitsAfterPrefix checks if the given rune slice contains at least one valid digit
 // (excluding underscores) according to the provided digit validator function
 func hasDigitsAfterPrefix(runes []rune, isValidDigit func(rune) bool) bool {
@@ -1312,10 +1381,12 @@ func (p *Parser) parseValueWithOptionalTypeAnnotation() Value {
 		// Numeric literal
 		numValue := p.parseNumber()
 		p.validateNumberBoundary()
+		numValue, originalBase := normalizeNumberValue(numValue)
 		value = Value{
 			Type:           ValueTypeNumber,
 			Value:          numValue,
 			TypeAnnotation: typeAnnotation,
+			OriginalBase:   originalBase,
 		}
 	} else if isIdentifierStart(ch) {
 		// Bare identifier string
@@ -1517,9 +1588,11 @@ func (p *Parser) parseValue() Value {
 		// Numeric literal
 		numValue := p.parseNumber()
 		p.validateNumberBoundary()
+		numValue, originalBase := normalizeNumberValue(numValue)
 		return Value{
-			Type:  ValueTypeNumber,
-			Value: numValue,
+			Type:         ValueTypeNumber,
+			Value:        numValue,
+			OriginalBase: originalBase,
 		}
 	} else if isIdentifierStart(ch) {
 		// Bare identifier string
